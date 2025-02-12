@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import userRoutes from "./routes/users.js";
 
 dotenv.config();
 
@@ -14,6 +15,8 @@ const corsOptions = {
 app.use(express.json());
 
 app.use(cors(corsOptions));
+
+app.use("/users", userRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to discloser");
