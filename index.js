@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/users.js";
 import recordRoutes from "./routes/records.js";
 import resultRoutes from "./routes/results.js";
+import shareRoutes from "./routes/share.js";
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.use(cors(corsOptions));
 app.use("/users", userRoutes);
 app.use("/records", recordRoutes);
 app.use("/results", resultRoutes);
+app.use("/share", shareRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to discloser");
