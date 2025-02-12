@@ -5,6 +5,7 @@ import userRoutes from "./routes/users.js";
 import recordRoutes from "./routes/records.js";
 import resultRoutes from "./routes/results.js";
 import shareRoutes from "./routes/share.js";
+import reminderRoutes from "./routes/reminders.js";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use("/users", userRoutes);
 app.use("/records", recordRoutes);
 app.use("/results", resultRoutes);
 app.use("/share", shareRoutes);
+app.use("/reminders", reminderRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to discloser");
