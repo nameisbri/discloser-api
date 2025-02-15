@@ -40,12 +40,8 @@ export const uploadRecord = async (req, res) => {
       }
     );
 
-    // Download the PDF from MinIO for parsing
-    const tempFilePath = `./temp/${filename}`;
-    await downloadFile(bucketName, filename, tempFilePath);
-
-    // Parse PDF and extract text
-    const extractedTexts = await parsePDF(tempFilePath);
+    // Parse PDF and extract text directly from the buffer
+    const extractedTexts = await parsePDF(req.file.buffer);
 
     // Create record in database
     const [recordId] = await trx("test_record").insert({
@@ -83,10 +79,6 @@ export const uploadRecord = async (req, res) => {
 
     // Commit transaction
     await trx.commit();
-
-    // Clean up temporary files
-    fs.unlinkSync(tempFilePath);
-    console.log(`Deleted temporary file: ${tempFilePath}`);
 
     // Fetch the complete record with results
     const record = await knex("test_record").where("id", recordId).first();

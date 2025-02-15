@@ -1,13 +1,11 @@
-// utils/stiTestUtils.js
-
 // List of STI tests and their regex patterns
 export const STI_TESTS = [
-  { name: "Chlamydia", regex: /Chlamydia\s*Trachomatis/i },
-  { name: "Gonorrhea", regex: /Neisseria\s*Gonorrhoeae/i },
-  { name: "Trichomonas", regex: /Trichomonas\s*Vaginalis/i },
+  { name: "Chlamydia", regex: /Chlamydia\sTrachomatis/i },
+  { name: "Gonorrhea", regex: /Neisseria\sGonorrhoeae/i },
+  { name: "Trichomonas", regex: /Trichomonas\sVaginalis/i },
   { name: "HIV", regex: /HIV/i },
   { name: "Syphilis", regex: /Syphilis/i },
-  { name: "Hepatitis B", regex: /Hepatitis\s*B/i },
+  { name: "Hepatitis B", regex: /Hepatitis\sB/i },
   { name: "Hepatitis C", regex: /Hepatitis\s*C/i },
   { name: "Herpes", regex: /Herpes/i },
 ];
