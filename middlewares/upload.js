@@ -32,7 +32,17 @@ const testMinioConnection = async () => {
   }
 };
 
+const downloadFile = async (bucketName, objectName, filePath) => {
+  try {
+    await minioClient.fGetObject(bucketName, objectName, filePath);
+    console.log(`File downloaded from ${bucketName}/${objectName}`);
+  } catch (error) {
+    console.error("Error downloading file from MinIO:", error);
+    throw error;
+  }
+};
+
 // Run the test function
 testMinioConnection();
 
-export { upload, minioClient };
+export { upload, downloadFile, minioClient };

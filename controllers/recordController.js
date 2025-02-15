@@ -1,7 +1,10 @@
 import initKnex from "knex";
 import configuration from "../knexfile.js";
-import { minioClient } from "../middlewares/upload.js";
+import { downloadFile, minioClient } from "../middlewares/upload.js";
 import { v4 as uuidv4 } from "uuid";
+import parsePDF from "../utils/pdfParser.js"; // Import the PDF parser
+import { STI_TESTS, findTestResults } from "../utils/stiTestUtils.js";
+import fs from "fs";
 
 const knex = initKnex(configuration);
 
@@ -9,7 +12,7 @@ export const uploadRecord = async (req, res) => {
   const trx = await knex.transaction();
 
   try {
-    const { user_id } = req.body;
+    const { user_id, test_date } = req.body;
 
     // Validate request
     if (!req.file) {
@@ -18,14 +21,9 @@ export const uploadRecord = async (req, res) => {
     if (!user_id) {
       return res.status(400).json({ error: "User ID is required" });
     }
-
-    // Log file details
-    console.log("File details:", {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      bufferLength: req.file.buffer?.length,
-    });
+    if (!test_date) {
+      return res.status(400).json({ error: "Test date is required" });
+    }
 
     // Generate unique filename and set up MinIO parameters
     const filename = `${uuidv4()}.pdf`;
@@ -39,10 +37,15 @@ export const uploadRecord = async (req, res) => {
       req.file.size,
       {
         "Content-Type": "application/pdf",
-        "X-Lab-Name": pdfData.labName,
-        "X-Accession-Number": pdfData.accessionNumber,
       }
     );
+
+    // Download the PDF from MinIO for parsing
+    const tempFilePath = `./temp/${filename}`;
+    await downloadFile(bucketName, filename, tempFilePath);
+
+    // Parse PDF and extract text
+    const extractedTexts = await parsePDF(tempFilePath);
 
     // Create record in database
     const [recordId] = await trx("test_record").insert({
@@ -54,25 +57,39 @@ export const uploadRecord = async (req, res) => {
     });
 
     // Insert test results if valid
-    if (pdfData.results && pdfData.results.length > 0) {
-      const resultsToInsert = pdfData.results.map((result) => ({
-        test_record_id: recordId,
-        test_type: result.test_type,
-        result: result.result,
-        notes: result.notes,
-        created_at: knex.fn.now(),
-        updated_at: knex.fn.now(),
-      }));
+    if (extractedTexts && extractedTexts.length > 0) {
+      const resultsToInsert = [];
 
-      await trx("test_result").insert(resultsToInsert);
+      extractedTexts.forEach(({ text, page }) => {
+        // Find STI test results in the extracted text
+        const testResults = findTestResults(text);
+
+        testResults.forEach((testResult) => {
+          resultsToInsert.push({
+            test_record_id: recordId,
+            test_type: testResult.test_type,
+            result: testResult.result,
+            notes: `Page ${page}`, // Add page number as notes
+            created_at: knex.fn.now(),
+            updated_at: knex.fn.now(),
+          });
+        });
+      });
+
+      if (resultsToInsert.length > 0) {
+        await trx("test_result").insert(resultsToInsert);
+      }
     }
 
     // Commit transaction
     await trx.commit();
 
+    // Clean up temporary files
+    fs.unlinkSync(tempFilePath);
+    console.log(`Deleted temporary file: ${tempFilePath}`);
+
     // Fetch the complete record with results
     const record = await knex("test_record").where("id", recordId).first();
-
     const results = await knex("test_result")
       .where("test_record_id", recordId)
       .select();

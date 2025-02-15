@@ -6,7 +6,6 @@ import recordRoutes from "./routes/records.js";
 import resultRoutes from "./routes/results.js";
 import shareRoutes from "./routes/share.js";
 import reminderRoutes from "./routes/reminders.js";
-import parseTest from "./utils/pdfParser.js";
 
 dotenv.config();
 
@@ -17,19 +16,6 @@ const PORT = process.env.PORT || 3000;
 const corsOptions = {
   origin: process.env.CORS_ORIGIN,
 };
-
-const parsed = (async () => {
-  try {
-    const pdfPath =
-      "/Users/gabriela-personal/brainstation/discloser-api/utils/september-9-2024.pdf";
-    const extractedTexts = await parseTest(pdfPath);
-
-    console.log("Extracted texts: ", extractedTexts);
-    return extractedTexts;
-  } catch (error) {
-    console.error("Error in main script:", error);
-  }
-})();
 
 app.use(express.json());
 
