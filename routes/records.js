@@ -8,7 +8,7 @@ import { upload } from "../middlewares/upload.js";
 
 const router = express.Router();
 
-// Update the upload route to use multer
+// in records.js route file
 router.post("/upload", upload.single("file"), uploadRecord);
 
 // Keep existing routes

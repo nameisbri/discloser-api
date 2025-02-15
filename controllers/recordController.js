@@ -1,41 +1,35 @@
 import initKnex from "knex";
 import configuration from "../knexfile.js";
-import { minioClient, upload } from "../middlewares/upload.js";
+import { minioClient } from "../middlewares/upload.js";
 import { v4 as uuidv4 } from "uuid";
 
 const knex = initKnex(configuration);
 
 export const uploadRecord = async (req, res) => {
+  const trx = await knex.transaction();
+
   try {
-    console.log("Request Body:", req.body); // Log the request body
-    console.log("Request File:", req.file); // Log the uploaded file
+    const { user_id } = req.body;
 
-    const { user_id, test_date } = req.body;
-
-    // Check if file exists in request
+    // Validate request
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
-
-    // Validate required fields
     if (!user_id) {
       return res.status(400).json({ error: "User ID is required" });
     }
 
-    if (!test_date) {
-      return res.status(400).json({ error: "Test date is required" });
-    }
+    // Log file details
+    console.log("File details:", {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      bufferLength: req.file.buffer?.length,
+    });
 
-    // Generate unique filename
+    // Generate unique filename and set up MinIO parameters
     const filename = `${uuidv4()}.pdf`;
     const bucketName = process.env.MINIO_BUCKET_NAME;
-
-    console.log("Attempting to upload file:", {
-      bucketName,
-      filename,
-      fileSize: req.file.size,
-      mimeType: req.file.mimetype,
-    });
 
     // Upload file to MinIO
     await minioClient.putObject(
@@ -43,13 +37,15 @@ export const uploadRecord = async (req, res) => {
       filename,
       req.file.buffer,
       req.file.size,
-      { "Content-Type": "application/pdf" }
+      {
+        "Content-Type": "application/pdf",
+        "X-Lab-Name": pdfData.labName,
+        "X-Accession-Number": pdfData.accessionNumber,
+      }
     );
 
-    console.log("File uploaded to MinIO successfully");
-
     // Create record in database
-    const [newRecordId] = await knex("test_record").insert({
+    const [recordId] = await trx("test_record").insert({
       user_id,
       test_date,
       file_path: `${bucketName}/${filename}`,
@@ -57,22 +53,44 @@ export const uploadRecord = async (req, res) => {
       updated_at: knex.fn.now(),
     });
 
-    console.log("Database record created:", newRecordId);
+    // Insert test results if valid
+    if (pdfData.results && pdfData.results.length > 0) {
+      const resultsToInsert = pdfData.results.map((result) => ({
+        test_record_id: recordId,
+        test_type: result.test_type,
+        result: result.result,
+        notes: result.notes,
+        created_at: knex.fn.now(),
+        updated_at: knex.fn.now(),
+      }));
 
-    // Fetch the newly created record
-    const newRecord = await knex("test_record")
-      .where({ id: newRecordId })
-      .first();
+      await trx("test_result").insert(resultsToInsert);
+    }
+
+    // Commit transaction
+    await trx.commit();
+
+    // Fetch the complete record with results
+    const record = await knex("test_record").where("id", recordId).first();
+
+    const results = await knex("test_result")
+      .where("test_record_id", recordId)
+      .select();
 
     res.status(201).json({
-      message: "File uploaded successfully",
-      record: newRecord,
+      message: "File uploaded and processed successfully",
+      record: {
+        ...record,
+        results,
+      },
     });
   } catch (error) {
+    await trx.rollback();
     console.error("Upload error:", error);
-    res
-      .status(500)
-      .json({ error: `Error uploading test record: ${error.message}` });
+    res.status(500).json({
+      error: "Error uploading and processing test record",
+      details: error.message,
+    });
   }
 };
 
@@ -89,7 +107,17 @@ export const getAllRecords = async (req, res) => {
       .orderBy("test_date", "desc")
       .select(["id", "test_date", "file_path", "created_at"]);
 
-    res.json(records);
+    // Get results for each record
+    const recordsWithResults = await Promise.all(
+      records.map(async (record) => {
+        const results = await knex("test_result")
+          .where("test_record_id", record.id)
+          .select();
+        return { ...record, results };
+      })
+    );
+
+    res.json(recordsWithResults);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error retrieving test records" });
@@ -116,7 +144,15 @@ export const getRecord = async (req, res) => {
       return res.status(404).json({ error: "Record not found" });
     }
 
-    res.json(record);
+    // Get results for the record
+    const results = await knex("test_result")
+      .where("test_record_id", id)
+      .select();
+
+    res.json({
+      ...record,
+      results,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error retrieving test record" });
