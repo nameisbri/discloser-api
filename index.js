@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 3000;
 const corsOptions = {
   origin: process.env.CORS_ORIGIN,
 };
+
 app.use(express.json());
 
 app.use(cors(corsOptions));
@@ -27,7 +28,7 @@ app.use("/share", shareRoutes);
 app.use("/reminders", reminderRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Welcome to discloser");
+  res.status(200).send("Welcome to discloser");
 });
 
 app.listen(PORT, () => {

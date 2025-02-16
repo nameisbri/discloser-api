@@ -4,16 +4,15 @@ import {
   getAllRecords,
   getRecord,
 } from "../controllers/recordController.js";
+import { upload } from "../middlewares/upload.js";
 
 const router = express.Router();
 
-// Upload new test record (PDF)
-router.post("/upload", uploadRecord);
+// in records.js route file
+router.post("/upload", upload.single("file"), uploadRecord);
 
-// Get all records for a user
+// Keep existing routes
 router.get("/", getAllRecords);
-
-// Get specific record details & PDF
 router.get("/:id", getRecord);
 
 export default router;
