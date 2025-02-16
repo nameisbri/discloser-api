@@ -2,9 +2,8 @@ import initKnex from "knex";
 import configuration from "../knexfile.js";
 import { downloadFile, minioClient } from "../middlewares/upload.js";
 import { v4 as uuidv4 } from "uuid";
-import parsePDF from "../utils/pdfParser.js"; // Import the PDF parser
+import parsePDF from "../utils/pdfParser.js";
 import { STI_TESTS, findTestResults } from "../utils/stiTestUtils.js";
-import fs from "fs";
 
 const knex = initKnex(configuration);
 
