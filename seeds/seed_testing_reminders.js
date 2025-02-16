@@ -2,56 +2,63 @@
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
-exports.seed = async function (knex) {
-  // Clear existing entries
+
+export async function seed(knex) {
   await knex("testing_reminders").del();
 
-  // Get user IDs
   const users = await knex("users").select("id");
+  const timestamp = new Date();
 
-  // Available frequencies
-  const frequencies = [
-    "1_month", // Monthly
-    "2_months", // Bi-monthly
-    "3_months", // Quarterly
-    "4_months", // Trimesterly
-    "6_months", // Semi-annually
-    "12_months", // Annually
-  ];
+  if (!users || users.length === 0) {
+    console.log("No users found. Please run users seed first.");
+    return;
+  }
 
-  // Create reminders
-  const reminders = [
+  return knex("testing_reminders").insert([
     {
-      user_id: users[0].id,
+      user_id: users[0].id, // Maya - Strict quarterly testing
       frequency: "3_months",
-      next_test_date: "2024-04-15",
-      last_notified_date: "2024-04-01",
+      next_test_date: "2024-06-15",
+      last_notified_date: null,
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
     },
     {
-      user_id: users[1].id,
+      user_id: users[1].id, // Marcus - Semi-annual testing
       frequency: "6_months",
       next_test_date: "2024-08-01",
       last_notified_date: null,
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
     },
     {
-      user_id: users[2].id,
-      frequency: "12_months",
-      next_test_date: "2024-08-21",
+      user_id: users[2].id, // Alex - Quarterly for events
+      frequency: "3_months",
+      next_test_date: "2024-06-01",
       last_notified_date: null,
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
     },
     {
-      user_id: users[3].id,
-      frequency: "2_months",
-      next_test_date: "2024-04-15",
+      user_id: users[3].id, // Sarah - Healthcare worker schedule
+      frequency: "6_months",
+      next_test_date: "2024-08-15",
       last_notified_date: null,
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
     },
     {
-      user_id: users[4].id,
-      frequency: "4_months",
-      next_test_date: "2024-05-08",
+      user_id: users[4].id, // Raj - New quarterly schedule
+      frequency: "3_months",
+      next_test_date: "2024-06-01",
       last_notified_date: null,
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
     },
-  ];
-
-  return knex("testing_reminders").insert(reminders);
-};
+  ]);
+}

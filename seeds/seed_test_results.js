@@ -2,19 +2,19 @@
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
-exports.seed = async function (knex) {
-  // Clear existing entries
+
+// seed_test_results.js
+export async function seed(knex) {
   await knex("test_result").del();
 
-  // Get test records
   const records = await knex("test_record").select("id", "test_date");
+  const timestamp = new Date();
 
   if (!records || records.length === 0) {
     console.log("No test records found. Please run test_record seeds first.");
     return;
   }
 
-  // Common test types
   const testTypes = [
     "HIV",
     "Syphilis",
@@ -26,108 +26,83 @@ exports.seed = async function (knex) {
     "HSV-2",
   ];
 
-  // Insert seed data - more diverse results
-  return knex("test_result").insert([
-    // First user's recent results - showing newly positive HSV-1
-    {
-      test_record_id: records[0].id,
-      test_type: "HSV-1",
-      result: "Positive",
-      notes: "New diagnosis, treatment plan discussed",
-    },
-    {
-      test_record_id: records[0].id,
-      test_type: "HIV",
-      result: "Negative",
-      notes: "Regular screening",
-    },
-    {
-      test_record_id: records[0].id,
-      test_type: "Syphilis",
-      result: "Negative",
-      notes: "Regular screening",
-    },
+  const results = [];
 
-    // First user's previous results - all negative
-    {
-      test_record_id: records[1].id,
-      test_type: "HSV-1",
-      result: "Negative",
-      notes: "Regular screening",
-    },
-    {
-      test_record_id: records[1].id,
-      test_type: "HIV",
-      result: "Negative",
-      notes: "Regular screening",
-    },
+  // Maya's results - Comprehensive testing, all negative
+  records.slice(0, 4).forEach((record) => {
+    testTypes.forEach((type) => {
+      results.push({
+        test_record_id: record.id,
+        test_type: type,
+        result: "Negative",
+        notes: "Regular quarterly screening",
+        is_active: true,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+    });
+  });
 
-    // Second user's results - managed chronic condition
-    {
-      test_record_id: records[3].id,
-      test_type: "HSV-2",
-      result: "Positive",
-      notes: "Continued management, viral load undetectable",
-    },
-    {
-      test_record_id: records[3].id,
-      test_type: "HIV",
-      result: "Negative",
-      notes: "Regular screening",
-    },
-    {
-      test_record_id: records[3].id,
-      test_type: "Syphilis",
-      result: "Negative",
-      notes: "Regular screening",
-    },
+  // Marcus's results - Basic panel as he returns to dating
+  records.slice(4, 6).forEach((record) => {
+    testTypes.slice(0, 4).forEach((type) => {
+      results.push({
+        test_record_id: record.id,
+        test_type: type,
+        result: "Negative",
+        notes: "Returning to regular testing post-divorce",
+        is_active: true,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+    });
+  });
 
-    // Third user's results - all negative
-    {
-      test_record_id: records[5].id,
-      test_type: "HIV",
-      result: "Negative",
-      notes: "Regular screening",
-    },
-    {
-      test_record_id: records[5].id,
-      test_type: "Syphilis",
-      result: "Negative",
-      notes: "Regular screening",
-    },
-    {
-      test_record_id: records[5].id,
-      test_type: "Gonorrhea",
-      result: "Negative",
-      notes: "Regular screening",
-    },
+  // Alex's results - Full panel, managed HSV-2
+  records.slice(6, 9).forEach((record) => {
+    testTypes.forEach((type) => {
+      results.push({
+        test_record_id: record.id,
+        test_type: type,
+        result: type === "HSV-2" ? "Positive" : "Negative",
+        notes:
+          type === "HSV-2"
+            ? "Managed with antivirals, viral load undetectable"
+            : "Regular testing for events",
+        is_active: true,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+    });
+  });
 
-    // Fourth user's recent results - treated and cleared
-    {
-      test_record_id: records[6].id,
-      test_type: "Chlamydia",
-      result: "Negative",
-      notes: "Follow-up after treatment, cleared",
-    },
-    {
-      test_record_id: records[6].id,
-      test_type: "HIV",
-      result: "Negative",
-      notes: "Regular screening",
-    },
+  // Sarah's results - Healthcare worker comprehensive panel
+  records.slice(9, 11).forEach((record) => {
+    testTypes.forEach((type) => {
+      results.push({
+        test_record_id: record.id,
+        test_type: type,
+        result: "Negative",
+        notes: "Healthcare worker comprehensive screening",
+        is_active: true,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+    });
+  });
 
-    // Fourth user's previous results - showing treatment success
-    {
-      test_record_id: records[7].id,
-      test_type: "Chlamydia",
-      result: "Positive",
-      notes: "Treatment prescribed",
-    },
-    {
-      test_record_id: records[7].id,
-      test_type: "HIV",
+  // Raj's results - First-time testing basic panel
+  testTypes.slice(0, 4).forEach((type) => {
+    results.push({
+      test_record_id: records[records.length - 1].id,
+      test_type: type,
       result: "Negative",
-      notes: "Regular screening",
-    },
-  ]);
-};
+      notes: "Initial screening panel",
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+    });
+  });
+
+  return knex("test_result").insert(results);
+}

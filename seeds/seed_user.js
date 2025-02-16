@@ -1,47 +1,57 @@
-/**
- * @param { import("knex").Knex } knex
- * @returns { Promise<void> }
- */
-exports.seed = async function (knex) {
-  // Clear existing entries
+export async function seed(knex) {
   await knex("users").del();
+  const timestamp = new Date();
 
-  // Seed users
   return knex("users").insert([
     {
-      name: "Alex Chen",
-      screen_name: "alexc",
+      name: "Maya Chen",
+      screen_name: "mayac",
+      email: "maya@example.com",
+      birth_date: "1996-03-15",
+      bio: "Software dev, poly, clear communication advocate",
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+    },
+    {
+      name: "Marcus Johnson",
+      screen_name: "marcusj",
+      email: "marcus@example.com",
+      birth_date: "1989-07-22",
+      bio: "Educator, getting back into dating",
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+    },
+    {
+      name: "Alex Rivera",
+      screen_name: "alexr",
       email: "alex@example.com",
-      birth_date: "1990-05-15",
-      bio: "Health conscious and proactive about testing",
+      birth_date: "1993-11-30",
+      bio: "Artist, open relationship, kink-friendly",
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
     },
     {
-      name: "Sam Taylor",
-      screen_name: "samt",
-      email: "sam@example.com",
-      birth_date: "1988-12-03",
-      bio: "Regular tester, advocate for health awareness",
+      name: "Sarah O'Connor",
+      screen_name: "saraho",
+      email: "sarah@example.com",
+      birth_date: "1982-09-12",
+      bio: "Healthcare professional, promoting good practices",
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
     },
     {
-      name: "Jordan Lee",
-      screen_name: "jlee",
-      email: "jordan@example.com",
-      birth_date: "1992-08-21",
-      bio: "New to regular testing",
-    },
-    {
-      name: "Morgan Smith",
-      screen_name: "msmith",
-      email: "morgan@example.com",
-      birth_date: "1995-03-30",
-      bio: "Passionate about sexual health education",
-    },
-    {
-      name: "Pat Johnson",
-      screen_name: "pjohnson",
-      email: "pat@example.com",
-      birth_date: "1991-11-08",
-      bio: "Advocate for regular testing",
+      name: "Raj Patel",
+      screen_name: "rajp",
+      email: "raj@example.com",
+      birth_date: "2000-05-28",
+      bio: "Grad student, new to regular testing",
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
     },
   ]);
-};
+}
