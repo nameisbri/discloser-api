@@ -3,17 +3,23 @@
  * @returns { Promise<void> }
  */
 
-// seed_test_results.js
 export async function seed(knex) {
   await knex("test_result").del();
 
-  const records = await knex("test_record").select("id", "test_date");
+  const records = await knex("test_record").select(
+    "id",
+    "user_id",
+    "test_date"
+  );
   const timestamp = new Date();
 
   if (!records || records.length === 0) {
     console.log("No test records found. Please run test_record seeds first.");
     return;
   }
+
+  const users = await knex("users").select("id", "name");
+  const [maya, marcus, alex, sarah, raj] = users;
 
   const testTypes = [
     "HIV",
@@ -28,14 +34,16 @@ export async function seed(knex) {
 
   const results = [];
 
-  // Maya's results - Comprehensive testing, all negative
-  records.slice(0, 4).forEach((record) => {
+  const getUserRecords = (userId) =>
+    records.filter((r) => r.user_id === userId);
+
+  getUserRecords(maya.id).forEach((record) => {
     testTypes.forEach((type) => {
       results.push({
         test_record_id: record.id,
         test_type: type,
         result: "Negative",
-        notes: "Regular quarterly screening",
+        notes: "Regular quarterly screening for poly lifestyle",
         is_active: true,
         created_at: timestamp,
         updated_at: timestamp,
@@ -43,8 +51,7 @@ export async function seed(knex) {
     });
   });
 
-  // Marcus's results - Basic panel as he returns to dating
-  records.slice(4, 6).forEach((record) => {
+  getUserRecords(marcus.id).forEach((record) => {
     testTypes.slice(0, 4).forEach((type) => {
       results.push({
         test_record_id: record.id,
@@ -58,8 +65,7 @@ export async function seed(knex) {
     });
   });
 
-  // Alex's results - Full panel, managed HSV-2
-  records.slice(6, 9).forEach((record) => {
+  getUserRecords(alex.id).forEach((record) => {
     testTypes.forEach((type) => {
       results.push({
         test_record_id: record.id,
@@ -67,8 +73,8 @@ export async function seed(knex) {
         result: type === "HSV-2" ? "Positive" : "Negative",
         notes:
           type === "HSV-2"
-            ? "Managed with antivirals, viral load undetectable"
-            : "Regular testing for events",
+            ? "Managed with antivirals, maintaining for event requirements"
+            : "Regular testing for community events",
         is_active: true,
         created_at: timestamp,
         updated_at: timestamp,
@@ -76,8 +82,7 @@ export async function seed(knex) {
     });
   });
 
-  // Sarah's results - Healthcare worker comprehensive panel
-  records.slice(9, 11).forEach((record) => {
+  getUserRecords(sarah.id).forEach((record) => {
     testTypes.forEach((type) => {
       results.push({
         test_record_id: record.id,
@@ -91,16 +96,17 @@ export async function seed(knex) {
     });
   });
 
-  // Raj's results - First-time testing basic panel
-  testTypes.slice(0, 4).forEach((type) => {
-    results.push({
-      test_record_id: records[records.length - 1].id,
-      test_type: type,
-      result: "Negative",
-      notes: "Initial screening panel",
-      is_active: true,
-      created_at: timestamp,
-      updated_at: timestamp,
+  getUserRecords(raj.id).forEach((record) => {
+    testTypes.slice(0, 4).forEach((type) => {
+      results.push({
+        test_record_id: record.id,
+        test_type: type,
+        result: "Negative",
+        notes: "Initial screening panel",
+        is_active: true,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
     });
   });
 

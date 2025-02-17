@@ -4,7 +4,8 @@ const knex = initKnex(configuration);
 
 export const createUser = async (req, res) => {
   try {
-    const { name, screen_name, email, birth_date, bio } = req.body;
+    const { name, screen_name, avatar_file_path, email, birth_date, bio } =
+      req.body;
 
     if (!name) {
       return res.status(400).json({ error: "Name is required" });
@@ -39,6 +40,7 @@ export const createUser = async (req, res) => {
         email,
         birth_date: birth_date || null,
         bio: bio || null,
+        avatar_file_path,
         is_active: 1,
         created_at: knex.fn.now(),
         updated_at: knex.fn.now(),
@@ -47,6 +49,7 @@ export const createUser = async (req, res) => {
         "id",
         "name",
         "screen_name",
+        "avatar_file_path",
         "email",
         "birth_date",
         "bio",
@@ -69,6 +72,7 @@ export const getUser = async (req, res) => {
         "id",
         "name",
         "screen_name",
+        "avatar_file_path",
         "email",
         "birth_date",
         "bio",

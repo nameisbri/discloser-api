@@ -13,7 +13,6 @@ export const uploadRecord = async (req, res) => {
   try {
     const { user_id, test_date } = req.body;
 
-    // Validate request
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
@@ -24,11 +23,9 @@ export const uploadRecord = async (req, res) => {
       return res.status(400).json({ error: "Test date is required" });
     }
 
-    // Generate unique filename and set up MinIO parameters
     const filename = `${uuidv4()}.pdf`;
     const bucketName = process.env.MINIO_BUCKET_NAME;
 
-    // Upload file to MinIO
     await minioClient.putObject(
       bucketName,
       filename,
@@ -39,10 +36,8 @@ export const uploadRecord = async (req, res) => {
       }
     );
 
-    // Parse PDF and extract text directly from the buffer
     const extractedTexts = await parsePDF(req.file.buffer);
 
-    // Create record in database
     const [recordId] = await trx("test_record").insert({
       user_id,
       test_date,

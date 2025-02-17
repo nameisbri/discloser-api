@@ -15,7 +15,6 @@ exports.up = function (knex) {
 
     table.boolean("is_active").notNullable().defaultTo(true);
     table.timestamps(true, true);
-
     table.index("email");
     table.index("screen_name");
   });
