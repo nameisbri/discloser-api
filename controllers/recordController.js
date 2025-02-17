@@ -1,9 +1,10 @@
 import initKnex from "knex";
 import configuration from "../knexfile.js";
-import { downloadFile, minioClient } from "../middlewares/upload.js";
+import { minioClient } from "../middlewares/upload.js";
 import { v4 as uuidv4 } from "uuid";
-import parsePDF from "../utils/pdfParser.js";
-import { STI_TESTS, findTestResults } from "../utils/stiTestUtils.js";
+import { processDocument } from "../utils/documentProcessor.js";
+import { findTestResults } from "../utils/stiTestUtils.js";
+import sharp from "sharp";
 
 const knex = initKnex(configuration);
 
@@ -13,7 +14,6 @@ export const uploadRecord = async (req, res) => {
   try {
     const { user_id, test_date } = req.body;
 
-    // Validate request
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
@@ -24,39 +24,53 @@ export const uploadRecord = async (req, res) => {
       return res.status(400).json({ error: "Test date is required" });
     }
 
-    // Generate unique filename and set up MinIO parameters
-    const filename = `${uuidv4()}.pdf`;
+    const { extractedTexts, originalBuffer, isImage } = await processDocument(
+      req.file.buffer,
+      req.file.mimetype
+    );
+
+    const fileExtension =
+      req.file.mimetype === "application/pdf"
+        ? "pdf"
+        : req.file.mimetype.split("/")[1];
+    const filename = `${uuidv4()}.${fileExtension}`;
     const bucketName = process.env.MINIO_BUCKET_NAME;
 
-    // Upload file to MinIO
+    let additionalMetadata = {};
+    if (isImage) {
+      const metadata = await sharp(originalBuffer).metadata();
+      additionalMetadata = {
+        width: metadata.width,
+        height: metadata.height,
+        format: metadata.format,
+      };
+    }
+
     await minioClient.putObject(
       bucketName,
       filename,
-      req.file.buffer,
-      req.file.size,
+      originalBuffer,
+      originalBuffer.length,
       {
-        "Content-Type": "application/pdf",
+        "Content-Type": req.file.mimetype,
+        ...additionalMetadata,
       }
     );
 
-    // Parse PDF and extract text directly from the buffer
-    const extractedTexts = await parsePDF(req.file.buffer);
-
-    // Create record in database
     const [recordId] = await trx("test_record").insert({
       user_id,
       test_date,
       file_path: `${bucketName}/${filename}`,
+      file_type: req.file.mimetype,
+      file_metadata: JSON.stringify(additionalMetadata),
       created_at: knex.fn.now(),
       updated_at: knex.fn.now(),
     });
 
-    // Insert test results if valid
     if (extractedTexts && extractedTexts.length > 0) {
       const resultsToInsert = [];
 
       extractedTexts.forEach(({ text, page }) => {
-        // Find STI test results in the extracted text
         const testResults = findTestResults(text);
 
         testResults.forEach((testResult) => {
@@ -64,7 +78,7 @@ export const uploadRecord = async (req, res) => {
             test_record_id: recordId,
             test_type: testResult.test_type,
             result: testResult.result,
-            notes: `Page ${page}`, // Add page number as notes
+            notes: `Page ${page} | ${testResult.notes}`,
             created_at: knex.fn.now(),
             updated_at: knex.fn.now(),
           });
@@ -79,7 +93,7 @@ export const uploadRecord = async (req, res) => {
     // Commit transaction
     await trx.commit();
 
-    // Fetch the complete record with results
+    // Fetch complete record with results
     const record = await knex("test_record").where("id", recordId).first();
     const results = await knex("test_result")
       .where("test_record_id", recordId)
@@ -96,7 +110,7 @@ export const uploadRecord = async (req, res) => {
     await trx.rollback();
     console.error("Upload error:", error);
     res.status(500).json({
-      error: "Error uploading and processing test record",
+      error: "Error uploading and processing record",
       details: error.message,
     });
   }
