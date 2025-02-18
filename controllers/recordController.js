@@ -241,3 +241,50 @@ export const getRecord = async (req, res) => {
     res.status(500).json({ error: "Error retrieving test record" });
   }
 };
+
+export const updateRecords = async (req, res) => {
+  const trx = await knex.transaction();
+
+  try {
+    const { records } = req.body;
+
+    if (!records || !Array.isArray(records)) {
+      return res.status(400).json({ error: "Invalid records data" });
+    }
+
+    for (const record of records) {
+      const { id, results } = record;
+
+      const existingRecord = await trx("test_record").where({ id }).first();
+
+      if (!existingRecord) {
+        throw new Error(`Record ${id} not found`);
+      }
+
+      const currentResults = await trx("test_result")
+        .where({ test_record_id: id })
+        .select("id");
+
+      const keepResultIds = results.map((r) => r.id);
+
+      await trx("test_result")
+        .where({ test_record_id: id })
+        .whereNotIn("id", keepResultIds)
+        .delete();
+    }
+
+    await trx.commit();
+
+    res.json({
+      message: "Records updated successfully",
+      updatedRecords: records.length,
+    });
+  } catch (error) {
+    await trx.rollback();
+    console.error("Update error:", error);
+    res.status(500).json({
+      error: "Error updating records",
+      details: error.message,
+    });
+  }
+};
