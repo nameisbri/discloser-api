@@ -27,7 +27,8 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    files: 5, // Maximum 5 files per request
   },
 });
 
@@ -39,32 +40,4 @@ const minioClient = new Minio.Client({
   secretKey: process.env.MINIO_SECRET_KEY,
 });
 
-const testMinioConnection = async () => {
-  try {
-    const bucketName = process.env.MINIO_BUCKET_NAME || "test-records";
-    const bucketExists = await minioClient.bucketExists(bucketName);
-
-    if (!bucketExists) {
-      console.log(`Bucket "${bucketName}" does not exist. Creating it...`);
-      await minioClient.makeBucket(bucketName, "us-east-1");
-    }
-
-    console.log("MinIO connection successful!");
-  } catch (error) {
-    console.error("MinIO connection error:", error);
-  }
-};
-
-const downloadFile = async (bucketName, objectName, filePath) => {
-  try {
-    await minioClient.fGetObject(bucketName, objectName, filePath);
-    console.log(`File downloaded from ${bucketName}/${objectName}`);
-  } catch (error) {
-    console.error("Error downloading file from MinIO:", error);
-    throw error;
-  }
-};
-
-testMinioConnection();
-
-export { upload, downloadFile, minioClient };
+export { upload, minioClient };

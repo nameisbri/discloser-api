@@ -6,6 +6,7 @@ import recordRoutes from "./routes/records.js";
 import resultRoutes from "./routes/results.js";
 import shareRoutes from "./routes/share.js";
 import reminderRoutes from "./routes/reminders.js";
+import { dumpTestPatterns } from "./utils/stiTestUtils.js";
 
 dotenv.config();
 
@@ -32,5 +33,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  dumpTestPatterns();
 });

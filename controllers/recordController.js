@@ -8,14 +8,20 @@ import sharp from "sharp";
 
 const knex = initKnex(configuration);
 
-export const uploadRecord = async (req, res) => {
+// Add date formatting helper
+const formatDateForMySQL = (dateString) => {
+  const date = new Date(dateString);
+  return date.toISOString().slice(0, 19).replace("T", " ");
+};
+
+export const uploadRecords = async (req, res) => {
   const trx = await knex.transaction();
 
   try {
     const { user_id, test_date } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded" });
     }
     if (!user_id) {
       return res.status(400).json({ error: "User ID is required" });
@@ -24,93 +30,148 @@ export const uploadRecord = async (req, res) => {
       return res.status(400).json({ error: "Test date is required" });
     }
 
-    const { extractedTexts, originalBuffer, isImage } = await processDocument(
-      req.file.buffer,
-      req.file.mimetype
-    );
+    const uploadResults = [];
 
-    const fileExtension =
-      req.file.mimetype === "application/pdf"
-        ? "pdf"
-        : req.file.mimetype.split("/")[1];
-    const filename = `${uuidv4()}.${fileExtension}`;
-    const bucketName = process.env.MINIO_BUCKET_NAME;
+    // Process each file
+    for (const file of req.files) {
+      try {
+        const { extractedTexts, originalBuffer, isImage } =
+          await processDocument(file.buffer, file.mimetype);
 
-    let additionalMetadata = {};
-    if (isImage) {
-      const metadata = await sharp(originalBuffer).metadata();
-      additionalMetadata = {
-        width: metadata.width,
-        height: metadata.height,
-        format: metadata.format,
-      };
-    }
+        const fileExtension =
+          file.mimetype === "application/pdf"
+            ? "pdf"
+            : file.mimetype.split("/")[1];
+        const filename = `${uuidv4()}.${fileExtension}`;
+        const bucketName = process.env.MINIO_BUCKET_NAME;
 
-    await minioClient.putObject(
-      bucketName,
-      filename,
-      originalBuffer,
-      originalBuffer.length,
-      {
-        "Content-Type": req.file.mimetype,
-        ...additionalMetadata,
-      }
-    );
+        let additionalMetadata = {};
+        if (isImage) {
+          const metadata = await sharp(originalBuffer).metadata();
+          additionalMetadata = {
+            width: metadata.width,
+            height: metadata.height,
+            format: metadata.format,
+          };
+        }
 
-    const [recordId] = await trx("test_record").insert({
-      user_id,
-      test_date,
-      file_path: `${bucketName}/${filename}`,
-      file_type: req.file.mimetype,
-      file_metadata: JSON.stringify(additionalMetadata),
-      created_at: knex.fn.now(),
-      updated_at: knex.fn.now(),
-    });
+        console.log("Uploading to MinIO...");
+        await minioClient.putObject(
+          bucketName,
+          filename,
+          originalBuffer,
+          originalBuffer.length,
+          {
+            "Content-Type": file.mimetype,
+            ...additionalMetadata,
+          }
+        );
+        console.log("MinIO upload complete");
 
-    if (extractedTexts && extractedTexts.length > 0) {
-      const resultsToInsert = [];
-
-      extractedTexts.forEach(({ text, page }) => {
-        const testResults = findTestResults(text);
-
-        testResults.forEach((testResult) => {
-          resultsToInsert.push({
-            test_record_id: recordId,
-            test_type: testResult.test_type,
-            result: testResult.result,
-            notes: `Page ${page} | ${testResult.notes}`,
-            created_at: knex.fn.now(),
-            updated_at: knex.fn.now(),
-          });
+        // Create record with formatted date
+        const [recordId] = await trx("test_record").insert({
+          user_id,
+          test_date: formatDateForMySQL(test_date),
+          file_path: `${bucketName}/${filename}`,
+          file_type: file.mimetype,
+          file_metadata: JSON.stringify(additionalMetadata),
+          created_at: knex.fn.now(),
+          updated_at: knex.fn.now(),
         });
-      });
+        console.log("Record created with ID:", recordId);
 
-      if (resultsToInsert.length > 0) {
-        await trx("test_result").insert(resultsToInsert);
+        // Process extracted test results
+        if (extractedTexts && extractedTexts.length > 0) {
+          const resultsToInsert = [];
+
+          extractedTexts.forEach(({ text, page }) => {
+            const testResults = findTestResults(text);
+            console.log(
+              `Found ${testResults.length} test results on page ${page}`
+            );
+
+            testResults.forEach((testResult) => {
+              resultsToInsert.push({
+                test_record_id: recordId,
+                test_type: testResult.test_type,
+                result: testResult.result,
+                notes: `${testResult.notes}`,
+                created_at: knex.fn.now(),
+                updated_at: knex.fn.now(),
+              });
+            });
+          });
+
+          if (resultsToInsert.length > 0) {
+            console.log(`Inserting ${resultsToInsert.length} test results`);
+            await trx("test_result").insert(resultsToInsert);
+          } else {
+            console.log("No test results to insert");
+          }
+        } else {
+          console.log("No extracted texts to process");
+        }
+
+        // Fetch complete record with results
+        const record = await trx("test_record").where("id", recordId).first();
+        const results = await trx("test_result")
+          .where("test_record_id", recordId)
+          .select();
+
+        console.log(
+          `Record ${recordId} completed with ${results.length} results`
+        );
+
+        uploadResults.push({
+          originalName: file.originalname,
+          record: {
+            ...record,
+            results,
+          },
+        });
+      } catch (error) {
+        console.error(`Error processing file ${file.originalname}:`, error);
+        console.error("Full error details:", {
+          message: error.message,
+          stack: error.stack,
+          cause: error.cause,
+        });
+
+        uploadResults.push({
+          originalName: file.originalname,
+          error: `Failed to process file: ${error.message}`,
+        });
       }
     }
 
     // Commit transaction
     await trx.commit();
 
-    // Fetch complete record with results
-    const record = await knex("test_record").where("id", recordId).first();
-    const results = await knex("test_result")
-      .where("test_record_id", recordId)
-      .select();
+    // Check if any files were processed successfully
+    const successfulUploads = uploadResults.filter((result) => result.record);
+    if (successfulUploads.length === 0) {
+      return res.status(500).json({
+        error: "Failed to process any files",
+        details: uploadResults,
+      });
+    }
 
+    // Return results
     res.status(201).json({
-      message: "File uploaded and processed successfully",
-      record: {
-        ...record,
-        results,
-      },
+      message: `Successfully processed ${successfulUploads.length} out of ${req.files.length} files`,
+      results: uploadResults,
     });
   } catch (error) {
     await trx.rollback();
     console.error("Upload error:", error);
+    console.error("Full error details:", {
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause,
+    });
+
     res.status(500).json({
-      error: "Error uploading and processing record",
+      error: "Error uploading and processing records",
       details: error.message,
     });
   }
