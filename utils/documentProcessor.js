@@ -3,6 +3,7 @@ import Tesseract from "tesseract.js";
 import { promises as fs } from "fs";
 import { fromBuffer } from "pdf2pic";
 import { PDFDocument } from "pdf-lib";
+import { extractDateFromText } from "../utils/stiTestUtils.js"; // Import the date extraction function
 
 const TEMP_DIR = "./temp/images";
 
@@ -32,6 +33,7 @@ const parsePDF = async (pdfBuffer) => {
     // Convert PDF to images
     const convert = fromBuffer(pdfBuffer, options);
     const extractedTexts = [];
+    let extractedDate = null; // Variable to store the extracted date
 
     for (let page = 1; page <= totalPages; page++) {
       console.log(`Processing page ${page}...`);
@@ -53,6 +55,11 @@ const parsePDF = async (pdfBuffer) => {
 
       extractedTexts.push({ page, text });
 
+      // Extract date from the text if not already found
+      if (!extractedDate) {
+        extractedDate = extractDateFromText(text);
+      }
+
       // Clean up the current page's temporary file immediately
       await fs.unlink(image.path);
     }
@@ -61,6 +68,7 @@ const parsePDF = async (pdfBuffer) => {
       extractedTexts,
       originalBuffer: pdfBuffer,
       isImage: false,
+      extractedDate, // Return the extracted date
     };
   } catch (error) {
     console.error("Error parsing PDF:", error);
@@ -128,6 +136,9 @@ const processImage = async (imageBuffer) => {
     console.log("OCR completed. Text length:", text.length);
     console.log("Sample of extracted text:", text.substring(0, 200));
 
+    // Extract date from the text
+    const extractedDate = extractDateFromText(text);
+
     return {
       extractedTexts: [
         {
@@ -137,6 +148,7 @@ const processImage = async (imageBuffer) => {
       ],
       originalBuffer: imageBuffer,
       isImage: true,
+      extractedDate, // Return the extracted date
     };
   } catch (error) {
     console.error("Error in image processing:", error);
