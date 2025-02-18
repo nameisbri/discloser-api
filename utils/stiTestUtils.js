@@ -7,13 +7,15 @@ export const TEST_RESULTS = {
   NOT_DETECTED: "Not Detected",
   INDETERMINATE: "Indeterminate",
   NUMERIC: "Numeric",
+  REACTIVE: "Reactive",
+  NON_REACTIVE: "Non-Reactive",
 };
 
 export const STI_TESTS = [
   // LifeLabs Format Tests
   {
     name: "Chlamydia trachomatis",
-    regex: /CHLAMYDIA\s+TRACHOMATIS\s+([A-Za-z-]+)/i,
+    regex: /CHLAMYDIA\s+TRACHOMATIS\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
     notePatterns: [
       {
         pattern: /SOURCE:\s*([^\n]+)/i,
@@ -31,7 +33,7 @@ export const STI_TESTS = [
   },
   {
     name: "Neisseria gonorrhoeae",
-    regex: /NEISSERIA\s+GONORRHOEAE\s+([A-Za-z-]+)/i,
+    regex: /NEISSERIA\s+GONORRHOEAE\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
     notePatterns: [
       {
         pattern: /SOURCE:\s*([^\n]+)/i,
@@ -49,7 +51,7 @@ export const STI_TESTS = [
   },
   {
     name: "Trichomonas vaginalis",
-    regex: /TRICHOMONAS\s+VAGINALIS\s+([A-Za-z-]+)/i,
+    regex: /TRICHOMONAS\s+VAGINALIS\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
     notePatterns: [
       {
         pattern: /SOURCE:\s*([^\n]+)/i,
@@ -66,7 +68,7 @@ export const STI_TESTS = [
   // Hepatitis A Tests
   {
     name: "Hepatitis A IgG Antibody",
-    regex: /Hepatitis\s+A\s+IgG\s+Antibody\s+([A-Za-z-]+)/i,
+    regex: /Hepatitis\s+A\s+IgG\s+Antibody\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
     notePatterns: [
       {
         pattern: /Source:\s*([^\n]+)/i,
@@ -89,10 +91,10 @@ export const STI_TESTS = [
     ],
   },
 
-  // Hepatitis B Tests
   {
     name: "Hepatitis B Surface Antigen",
-    regex: /Hepatitis\s+B\s+Surface\s+Antigen\s+(Non-Reactive[^\n]*)/i,
+    regex:
+      /Hepatitis\s+B\s+Surface\s+Antigen\s+(Non-Reactive[^\n]*|\d+\s*[a-zA-Z/]+)/i,
     notePatterns: [
       {
         pattern: /Source:\s*([^\n]+)/i,
@@ -103,7 +105,7 @@ export const STI_TESTS = [
   {
     name: "Hepatitis B Core Total Antibody",
     regex:
-      /Hepatitis\s+B\s+Core\s+Total\s+\(IgG\+IgM\)\s+Antibody\s+(Non-Reactive[^\n]*)/i,
+      /Hepatitis\s+B\s+Core\s+Total\s+\(IgG\+IgM\)\s+Antibody\s+(Non-Reactive[^\n]*|\d+\s*[a-zA-Z/]+)/i,
     notePatterns: [
       {
         pattern: /Source:\s*([^\n]+)/i,
@@ -146,7 +148,7 @@ export const STI_TESTS = [
   // Hepatitis C Tests
   {
     name: "Hepatitis C Antibody",
-    regex: /Hepatitis\s+C\s+Antibody\s+([A-Za-z-]+)/i,
+    regex: /Hepatitis\s+C\s+Antibody\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
     notePatterns: [
       {
         pattern: /Source:\s*([^\n]+)/i,
@@ -167,7 +169,7 @@ export const STI_TESTS = [
 
   {
     name: "Syphilis Antibody Screen",
-    regex: /Syphilis\s+Antibody\s+Screen\s+([A-Za-z-]+)/i,
+    regex: /Syphilis\s+Antibody\s+Screen\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
     notePatterns: [
       {
         pattern: /Source:\s*([^\n]+)/i,
@@ -198,7 +200,8 @@ export const STI_TESTS = [
   // Herpes Tests
   {
     name: "Herpes Simplex Virus 1 IgG",
-    regex: /Herpes\s+Simplex\s+Virus\s+1\s+IgG\s+CLIA\s+([A-Za-z-]+)/i,
+    regex:
+      /Herpes\s+Simplex\s+Virus\s+1\s+IgG\s+CLIA\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
     notePatterns: [
       {
         pattern: /Source:\s*([^\n]+)/i,
@@ -208,7 +211,8 @@ export const STI_TESTS = [
   },
   {
     name: "Herpes Simplex Virus 2 IgG",
-    regex: /Herpes\s+Simplex\s+Virus\s+2\s+IgG\s+CLIA\s+([A-Za-z-]+)/i,
+    regex:
+      /Herpes\s+Simplex\s+Virus\s+2\s+IgG\s+CLIA\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
     notePatterns: [
       {
         pattern: /Source:\s*([^\n]+)/i,
@@ -230,7 +234,8 @@ export const STI_TESTS = [
   // HIV Tests
   {
     name: "HIV 1/2 Ag/Ab Combo Screen",
-    regex: /HIV1\s*\/\s*2\s+Ag\/Ab\s+Combo\s+Screen\s+([A-Za-z-]+)/i,
+    regex:
+      /HIV1\s*\/\s*2\s+Ag\/Ab\s+Combo\s+Screen\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
     notePatterns: [
       {
         pattern: /Source:\s*([^\n]+)/i,
@@ -251,122 +256,85 @@ export const STI_TESTS = [
 ];
 
 const cleanResult = (result) => {
-  // Remove date and flags pattern (e.g., "2022-11-02 *H")
-  return result.replace(/\s+\d{4}-\d{2}-\d{2}\s+\*[A-Z]$/, "").trim();
+  if (!result) return "";
+  return result.replace(/[^a-zA-Z0-9\s]/g, "").trim();
 };
 
 export const standardizeResult = (result, testType) => {
-  result = cleanResult(result);
+  console.log("Raw Result:", result); // Log the raw result
+  result = cleanResult(result); // Ensure cleanResult is defined and working
   const lowerResult = result.toLowerCase().trim();
 
-  // Handle numeric values
+  // Handle numeric values with units (e.g., "101.16 mIU/mL")
   if (/^[\d.]+\s*[a-zA-Z/]+$/.test(result)) {
+    console.log("Numeric Result Detected:", result); // Log numeric results
     return {
       result: TEST_RESULTS.NUMERIC,
-      value: result,
+      value: result, // Include the unit (e.g., "101.16 mIU/mL")
     };
   }
 
-  // Handle exact "Non-Reactive" matches first
+  // Handle "Non-Reactive"
   if (/^non-reactive$|^non reactive$/i.test(lowerResult)) {
-    return { result: TEST_RESULTS.NEGATIVE };
+    console.log("Non-Reactive Result Detected:", result); // Log Non-Reactive results
+    return { result: TEST_RESULTS.NON_REACTIVE };
   }
 
-  // Handle Syphilis specific interpretations
-  if (testType === "Syphilis Serology Interpretation") {
-    if (lowerResult.includes("no serological evidence")) {
-      return { result: TEST_RESULTS.NEGATIVE };
-    }
-  }
-
-  // Handle immunity patterns
-  if (/evidence of immunity|immune/.test(lowerResult)) {
+  // Handle "Evidence of immunity"
+  if (/evidence of immunity/i.test(lowerResult)) {
+    console.log("Immune Result Detected:", result); // Log Immune results
     return { result: TEST_RESULTS.IMMUNE };
+  }
+
+  // Handle "No evidence of Hepatitis B Virus infection"
+  if (/no evidence of hepatitis b virus infection/i.test(lowerResult)) {
+    console.log("Negative Result Detected:", result); // Log Negative results
+    return { result: TEST_RESULTS.NEGATIVE };
   }
 
   // Handle other negative patterns
   if (/^negative$|no evidence|absent|not detected/i.test(lowerResult)) {
+    console.log("Negative Result Detected:", result); // Log Negative results
     return { result: TEST_RESULTS.NEGATIVE };
   }
 
   // Handle positive patterns - be more specific to avoid false matches
   if (/^positive$|^reactive$/i.test(lowerResult)) {
+    console.log("Positive Result Detected:", result); // Log Positive results
     return { result: TEST_RESULTS.POSITIVE };
   }
 
   // Handle borderline cases
   if (/borderline|unclear|equivocal/.test(lowerResult)) {
+    console.log("Indeterminate Result Detected:", result); // Log Indeterminate results
     return { result: TEST_RESULTS.INDETERMINATE };
   }
 
   // Default case
+  console.log("Default Case - Indeterminate Result Detected:", result); // Log default case
   return { result: TEST_RESULTS.INDETERMINATE };
 };
 
-const removeDuplicateNotes = (notes) => {
-  return [...new Set(notes)].filter(Boolean);
-};
-
-const extractTestNotes = (text, testConfig, result, value = null) => {
+const extractTestNotes = (text, testConfig) => {
   const notes = [];
 
-  // Extract date and flags
-  const dateFlag = result.match(/(\d{4}-\d{2}-\d{2})\s+(\*[A-Z])$/);
-  if (dateFlag) {
-    notes.push(`Date Approved: ${dateFlag[1]}`);
-    notes.push(`Flag: ${dateFlag[2]}`);
-  }
-
-  // Add numeric value to notes if present
-  if (value) {
-    notes.push(`Value: ${value}`);
-  }
-
-  // Look for Syphilis-specific notes
-  if (text.includes("No confirmatory testing is performed")) {
-    notes.push(
-      "Lab Note: No confirmatory testing is performed on samples with non-reactive screening results"
-    );
-  }
-
-  if (text.includes("clinical suspicion of early syphilis")) {
-    notes.push(
-      "Lab Note: If clinical suspicion of early syphilis, suggest single repeat serology in 4 weeks if not repeated already"
-    );
-  }
-
-  if (text.includes("high risk groups")) {
-    notes.push(
-      "Lab Note: Persons in high risk groups who are nonreactive should be retested for up to three (3) months following possible exposure"
-    );
-  }
-
-  // Process specimen info
   testConfig.notePatterns.forEach(({ pattern, label }) => {
     const match = text.match(pattern);
     if (match && match[1]) {
-      notes.push(`${label}: ${match[1].trim()}`);
+      const value = match[1].trim().replace(/\s+/g, " ");
+      if (value && value !== "") {
+        notes.push(`${label}: ${value}`);
+      }
     }
   });
 
-  // Process additional lab notes
-  const notePatterns = [
-    /Note:\s+([^\n]+)/g,
-    /Please note[^.]+\./g,
-    /Results to be interpreted[^.]+\./g,
-  ];
+  // Add any warning messages about sample volume
+  const volumeWarning = text.match(/Please note that the volume[^.]+\./);
+  if (volumeWarning) {
+    notes.push(`Lab Note: ${volumeWarning[0].trim()}`);
+  }
 
-  notePatterns.forEach((pattern) => {
-    const matches = text.match(pattern);
-    if (matches) {
-      matches.forEach((note) => {
-        const cleanNote = note.replace(/^(Note:|Please note)/, "").trim();
-        notes.push(`Lab Note: ${cleanNote}`);
-      });
-    }
-  });
-
-  return [...new Set(notes)].filter(Boolean).join(" | ");
+  return notes.join(" | ");
 };
 
 export const findTestResults = (text) => {
@@ -374,25 +342,43 @@ export const findTestResults = (text) => {
   const textBlock = typeof text === "string" ? text : text.toString();
 
   STI_TESTS.forEach((test) => {
-    const match = textBlock.match(test.regex);
+    try {
+      const match = textBlock.match(test.regex);
 
-    if (match && match[1]) {
-      const rawResult = match[1].trim();
-      const { result, value } = standardizeResult(rawResult, test.name);
+      if (match) {
+        const rawResult = match[1].trim();
+        console.log("RAW RESULT: ", rawResult);
+        const { result, value } = standardizeResult(rawResult, test.name);
 
-      const contextStart = Math.max(0, match.index - 500);
-      const contextEnd = Math.min(textBlock.length, match.index + 500);
-      const context = textBlock.slice(contextStart, contextEnd);
+        // Ensure result is not undefined
+        const standardizedResult = result || TEST_RESULTS.INDETERMINATE;
 
-      const notes = extractTestNotes(context, test, rawResult, value);
+        // Get context around the match for better note extraction
+        const contextStart = Math.max(0, match.index - 500);
+        const contextEnd = Math.min(textBlock.length, match.index + 500);
+        const context = textBlock.slice(contextStart, contextEnd);
 
-      results.push({
-        test_type: test.name,
-        result: result,
-        notes: notes || "No additional notes",
-      });
+        const notes = extractTestNotes(context, test, rawResult, value);
+
+        results.push({
+          test_type: test.name,
+          result: standardizedResult, // Use the standardized result
+          notes: notes || "No additional notes",
+        });
+      }
+    } catch (error) {
+      console.error(`Error processing test ${test.name}:`, error);
     }
   });
 
   return results;
+};
+
+// Helper function to dump the current patterns we're looking for
+export const dumpTestPatterns = () => {
+  STI_TESTS.forEach((test) => {
+    console.log(`Test: ${test.name}`);
+    console.log(`Regex: ${test.regex}`);
+    console.log(`Note Patterns: ${JSON.stringify(test.notePatterns, null, 2)}`);
+  });
 };
