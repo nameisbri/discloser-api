@@ -1,4 +1,13 @@
-// stiTestUtils.js
+export const TEST_RESULTS = {
+  POSITIVE: "Positive",
+  NEGATIVE: "Negative",
+  IMMUNE: "Immune",
+  NOT_IMMUNE: "Not Immune",
+  DETECTED: "Detected",
+  NOT_DETECTED: "Not Detected",
+  INDETERMINATE: "Indeterminate",
+  NUMERIC: "Numeric",
+};
 
 export const STI_TESTS = [
   {
@@ -57,7 +66,6 @@ export const STI_TESTS = [
   },
 ];
 
-// Helper function to standardize result values
 export const standardizeResult = (result) => {
   const positivePatterns = /positive|reactive|detected|present/i;
   const negativePatterns = /negative|non-reactive|not detected|absent/i;
@@ -71,7 +79,6 @@ export const standardizeResult = (result) => {
   }
 };
 
-// Function to extract test notes
 const extractTestNotes = (text, testConfig) => {
   const notes = [];
 
@@ -94,32 +101,68 @@ const extractTestNotes = (text, testConfig) => {
   return notes.join(" | ");
 };
 
-// Enhanced function to find STI test results in extracted text
-export const findTestResults = (text, pageNum) => {
+export const findTestResults = (text) => {
+  console.log("\n--- Test Result Search Debug ---");
+  console.log("Full extracted text:", text);
+  console.log("\nSearching for patterns...");
+
   const results = [];
   const textBlock = typeof text === "string" ? text : text.toString();
 
   STI_TESTS.forEach((test) => {
-    const match = textBlock.match(test.regex);
+    try {
+      console.log(`\nChecking for test: ${test.name}`);
+      console.log("Using regex:", test.regex);
 
-    if (match && match[1]) {
-      const result = standardizeResult(match[1]);
+      const match = textBlock.match(test.regex);
 
-      // Get the context around this test result for notes
-      const contextStart = Math.max(0, match.index - 500);
-      const contextEnd = Math.min(textBlock.length, match.index + 500);
-      const context = textBlock.slice(contextStart, contextEnd);
+      if (match) {
+        console.log("Found match:", match);
+        console.log("Match groups:", match.groups);
+        console.log("Match index:", match.index);
 
-      // Extract notes from the context
-      const notes = extractTestNotes(context, test);
+        const rawResult = match[1].trim();
+        console.log("Raw result:", rawResult);
 
-      results.push({
-        test_type: test.name,
-        result: result,
-        notes: notes || "N/A", // Fallback to page number if no specific notes found
-      });
+        const { result, value } = standardizeResult(rawResult, test.name);
+        console.log("Standardized result:", { result, value });
+
+        // Get context around the match for better note extraction
+        const contextStart = Math.max(0, match.index - 500);
+        const contextEnd = Math.min(textBlock.length, match.index + 500);
+        const context = textBlock.slice(contextStart, contextEnd);
+        console.log("Context around match:", context);
+
+        const notes = extractTestNotes(context, test, rawResult, value);
+        console.log("Extracted notes:", notes);
+
+        results.push({
+          test_type: test.name,
+          result: result,
+          notes: notes || "No additional notes",
+        });
+      } else {
+        console.log("No match found for this test");
+      }
+    } catch (error) {
+      console.error(`Error processing test ${test.name}:`, error);
     }
   });
 
+  console.log(`\nTotal results found: ${results.length}`);
+  if (results.length > 0) {
+    console.log("Results:", results);
+  }
+
   return results;
+};
+
+// Helper function to dump the current patterns we're looking for
+export const dumpTestPatterns = () => {
+  console.log("\n--- Current Test Patterns ---");
+  STI_TESTS.forEach((test) => {
+    console.log(`\nTest: ${test.name}`);
+    console.log("Regex:", test.regex);
+    console.log("Note patterns:", test.notePatterns);
+  });
 };

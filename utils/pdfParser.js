@@ -1,4 +1,3 @@
-// pdfParser.js
 import { fromBuffer } from "pdf2pic";
 import Tesseract from "tesseract.js";
 import fs from "fs";
@@ -68,7 +67,11 @@ const parsePDF = async (pdfBuffer) => {
       cleanupTempFiles(image.path);
     }
 
-    return extractedTexts;
+    return {
+      extractedTexts,
+      originalBuffer: pdfBuffer,
+      isImage: false,
+    };
   } catch (error) {
     console.error("Error parsing PDF:", error);
     throw error;
