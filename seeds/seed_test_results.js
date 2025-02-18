@@ -10,7 +10,6 @@ exports.seed = async function (knex) {
   const records = await knex("test_record").select("id", "test_date");
 
   if (!records || records.length === 0) {
-    console.log("No test records found. Please run test_record seeds first.");
     return;
   }
 

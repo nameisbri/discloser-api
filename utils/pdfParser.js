@@ -19,7 +19,7 @@ const cleanupTempFiles = (filePath) => {
   try {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
-      console.log(`Deleted temporary file: ${filePath}`);
+      
     }
   } catch (error) {
     console.error(`Error deleting temporary file ${filePath}:`, error);
@@ -44,7 +44,7 @@ const parsePDF = async (pdfBuffer) => {
     const extractedTexts = [];
 
     for (let page = 1; page <= totalPages; page++) {
-      console.log(`Processing page ${page}...`);
+      
 
       // Convert page to image
       const image = await convert(page, { responseType: "image" });
@@ -54,7 +54,7 @@ const parsePDF = async (pdfBuffer) => {
       const {
         data: { text },
       } = await Tesseract.recognize(image.path, "eng", {
-        logger: (m) => console.log(m),
+        logger: (m) => 
         tessedit_char_whitelist:
           "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,:/- ()",
         tessedit_pageseg_mode: "1",
@@ -83,7 +83,7 @@ const parsePDF = async (pdfBuffer) => {
     try {
       fs.rmdirSync(TEMP_DIR);
     } catch (error) {
-      console.log("Note: Temp directory not empty or already removed");
+      
     }
   }
 };

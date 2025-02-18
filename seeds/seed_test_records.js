@@ -8,7 +8,7 @@ exports.seed = async function (knex) {
   const users = await knex("users").select("id");
 
   if (!users || users.length === 0) {
-    console.log(
+    
       "No users found in the database. Make sure to run the users seed first."
     );
     return;

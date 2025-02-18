@@ -19,11 +19,6 @@ export const uploadRecords = async (req, res) => {
 
   try {
     const { user_id, test_date } = req.body;
-    console.log("Starting upload process with:", {
-      filesCount: req.files?.length,
-      user_id,
-      test_date,
-    });
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: "No files uploaded" });
@@ -40,24 +35,8 @@ export const uploadRecords = async (req, res) => {
     // Process each file
     for (const file of req.files) {
       try {
-        console.log(`\nProcessing file: ${file.originalname}`);
-        console.log("File details:", {
-          mimetype: file.mimetype,
-          size: file.size,
-          encoding: file.encoding,
-        });
-
         const { extractedTexts, originalBuffer, isImage } =
           await processDocument(file.buffer, file.mimetype);
-
-        console.log("Document processing complete");
-        console.log("Extracted text count:", extractedTexts?.length);
-        if (extractedTexts?.[0]?.text) {
-          console.log(
-            "First page text sample:",
-            extractedTexts[0].text.substring(0, 200)
-          );
-        }
 
         const fileExtension =
           file.mimetype === "application/pdf"
@@ -106,23 +85,17 @@ export const uploadRecords = async (req, res) => {
           const resultsToInsert = [];
 
           extractedTexts.forEach(({ text, page }) => {
-            console.log(`\nProcessing text from page ${page}`);
             const testResults = findTestResults(text);
             console.log(
               `Found ${testResults.length} test results on page ${page}`
             );
 
             testResults.forEach((testResult) => {
-              console.log("Test result found:", {
-                type: testResult.test_type,
-                result: testResult.result,
-              });
-
               resultsToInsert.push({
                 test_record_id: recordId,
                 test_type: testResult.test_type,
                 result: testResult.result,
-                notes: `Page ${page} | ${testResult.notes}`,
+                notes: `${testResult.notes}`,
                 created_at: knex.fn.now(),
                 updated_at: knex.fn.now(),
               });
