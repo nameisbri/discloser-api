@@ -337,6 +337,20 @@ const extractTestNotes = (text, testConfig) => {
   return notes.join(" | ");
 };
 
+export const extractDateFromText = (text) => {
+  // Use a regular expression to find dates in the text
+  const dateRegex =
+    /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)|(\d{4}-\d{2}-\d{2})/g;
+  const matches = text.match(dateRegex);
+
+  if (matches && matches.length > 0) {
+    // Return the first valid date found
+    return matches[0];
+  }
+
+  return null; // Return null if no date is found
+};
+
 export const findTestResults = (text) => {
   const results = [];
   const textBlock = typeof text === "string" ? text : text.toString();

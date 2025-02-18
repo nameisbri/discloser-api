@@ -11,6 +11,9 @@ const knex = initKnex(configuration);
 // Add date formatting helper
 const formatDateForMySQL = (dateString) => {
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    throw new Error(`Invalid date string: ${dateString}`);
+  }
   return date.toISOString().slice(0, 19).replace("T", " ");
 };
 
@@ -18,16 +21,14 @@ export const uploadRecords = async (req, res) => {
   const trx = await knex.transaction();
 
   try {
-    const { user_id, test_date } = req.body;
+    const { user_id } = req.body;
 
+    console.log("Received user_id:", user_id);
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: "No files uploaded" });
     }
     if (!user_id) {
       return res.status(400).json({ error: "User ID is required" });
-    }
-    if (!test_date) {
-      return res.status(400).json({ error: "Test date is required" });
     }
 
     const uploadResults = [];
@@ -35,8 +36,13 @@ export const uploadRecords = async (req, res) => {
     // Process each file
     for (const file of req.files) {
       try {
-        const { extractedTexts, originalBuffer, isImage } =
+        // Process the document and extract the date
+        const { extractedTexts, originalBuffer, isImage, extractedDate } =
           await processDocument(file.buffer, file.mimetype);
+
+        if (!extractedDate) {
+          throw new Error("No date found in the document");
+        }
 
         const fileExtension =
           file.mimetype === "application/pdf"
@@ -68,10 +74,14 @@ export const uploadRecords = async (req, res) => {
         );
         console.log("MinIO upload complete");
 
-        // Create record with formatted date
+        // Use the extracted date from the document
+        console.log("Extracted date from document:", extractedDate);
+        const formattedTestDate = formatDateForMySQL(extractedDate);
+        console.log("Formatted test_date for MySQL:", formattedTestDate);
+
         const [recordId] = await trx("test_record").insert({
           user_id,
-          test_date: formatDateForMySQL(test_date),
+          test_date: formattedTestDate, // Use the extracted date here
           file_path: `${bucketName}/${filename}`,
           file_type: file.mimetype,
           file_metadata: JSON.stringify(additionalMetadata),
