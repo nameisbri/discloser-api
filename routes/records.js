@@ -3,6 +3,7 @@ import {
   uploadRecords,
   getAllRecords,
   getRecord,
+  updateRecords,
 } from "../controllers/recordController.js";
 import { upload } from "../middlewares/upload.js";
 
@@ -29,5 +30,6 @@ router.post(
 
 router.get("/", getAllRecords);
 router.get("/:id", getRecord);
+router.post("/update", updateRecords);
 
 export default router;

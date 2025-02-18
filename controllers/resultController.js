@@ -78,3 +78,22 @@ export const getResult = async (req, res) => {
     res.status(500).json({ error: "Error retrieving test result" });
   }
 };
+
+export const deleteResult = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await knex("test_result").where({ id }).first();
+
+    if (!result) {
+      return res.status(404).json({ error: "Result not found" });
+    }
+
+    await knex("test_result").where({ id }).del();
+
+    res.json({ message: "Result deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error deleting test result" });
+  }
+};
