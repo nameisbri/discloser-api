@@ -338,19 +338,31 @@ const extractTestNotes = (text, testConfig) => {
 };
 
 export const extractDateFromText = (text) => {
-  // Use a regular expression to find dates in the text
+  // Combined regex to match multiple date formats
   const dateRegex =
-    /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)|(\d{4}-\d{2}-\d{2})/g;
+    /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)|(\d{4}-\d{2}-\d{2})|(\d{2}\/\d{2}\/\d{4})|(\d{2}-\d{2}-\d{4})|(\d{2}-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-\d{4})/gi;
+
   const matches = text.match(dateRegex);
 
   if (matches && matches.length > 0) {
-    // Return the first valid date found
-    return matches[0];
+    // Get the current date and calculate the date 3 years ago
+    const currentDate = new Date();
+    const threeYearsAgo = new Date();
+    threeYearsAgo.setFullYear(currentDate.getFullYear() - 3);
+
+    // Iterate through all matches and find the first valid date
+    for (const match of matches) {
+      const date = new Date(match);
+
+      // Check if the date is valid and not older than 3 years
+      if (!isNaN(date.getTime()) && date >= threeYearsAgo) {
+        return match; // Return the first valid date
+      }
+    }
   }
 
-  return null; // Return null if no date is found
+  return null; // Return null if no valid date is found
 };
-
 export const findTestResults = (text) => {
   const results = [];
   const textBlock = typeof text === "string" ? text : text.toString();

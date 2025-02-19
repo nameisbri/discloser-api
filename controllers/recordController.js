@@ -8,8 +8,52 @@ import sharp from "sharp";
 
 const knex = initKnex(configuration);
 
-// Add date formatting helper
 const formatDateForMySQL = (dateString) => {
+  // Check if the date is in the DD-MMM-YYYY format (e.g., 09-SEP-2024)
+  const monthAbbrRegex =
+    /(\d{2})-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-(\d{4})/i;
+  const monthAbbrMatch = dateString.match(monthAbbrRegex);
+
+  if (monthAbbrMatch) {
+    // Convert the month abbreviation to a number (01-12)
+    const monthMap = {
+      JAN: "01",
+      FEB: "02",
+      MAR: "03",
+      APR: "04",
+      MAY: "05",
+      JUN: "06",
+      JUL: "07",
+      AUG: "08",
+      SEP: "09",
+      OCT: "10",
+      NOV: "11",
+      DEC: "12",
+    };
+    const day = monthAbbrMatch[1];
+    const month = monthMap[monthAbbrMatch[2].toUpperCase()];
+    const year = monthAbbrMatch[3];
+
+    // Create a date object and format it for MySQL
+    const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
+    return date.toISOString().slice(0, 19).replace("T", " ");
+  }
+
+  // Check if the date is in the MM/DD/YYYY or MM-DD-YYYY format
+  const slashOrHyphenRegex = /(\d{2})[\/-](\d{2})[\/-](\d{4})/;
+  const slashOrHyphenMatch = dateString.match(slashOrHyphenRegex);
+
+  if (slashOrHyphenMatch) {
+    const month = slashOrHyphenMatch[1];
+    const day = slashOrHyphenMatch[2];
+    const year = slashOrHyphenMatch[3];
+
+    // Create a date object and format it for MySQL
+    const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
+    return date.toISOString().slice(0, 19).replace("T", " ");
+  }
+
+  // Fallback for ISO and short date formats
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
     throw new Error(`Invalid date string: ${dateString}`);
@@ -33,15 +77,24 @@ export const uploadRecords = async (req, res) => {
 
     const uploadResults = [];
 
-    // Process each file
     for (const file of req.files) {
       try {
-        // Process the document and extract the date
-        const { extractedTexts, originalBuffer, isImage, extractedDate } =
-          await processDocument(file.buffer, file.mimetype);
+        const {
+          extractedTexts,
+          originalBuffer,
+          isImage,
+          extractedDate: initialExtractedDate,
+        } = await processDocument(file.buffer, file.mimetype);
 
+        // Use let instead of const to allow reassignment
+        let extractedDate = initialExtractedDate;
+
+        // Handle missing date
         if (!extractedDate) {
-          throw new Error("No date found in the document");
+          console.warn(
+            "No date found in the document. Using current date as fallback."
+          );
+          extractedDate = new Date().toISOString(); // Fallback to current date
         }
 
         const fileExtension =
@@ -74,14 +127,13 @@ export const uploadRecords = async (req, res) => {
         );
         console.log("MinIO upload complete");
 
-        // Use the extracted date from the document
         console.log("Extracted date from document:", extractedDate);
         const formattedTestDate = formatDateForMySQL(extractedDate);
         console.log("Formatted test_date for MySQL:", formattedTestDate);
 
         const [recordId] = await trx("test_record").insert({
           user_id,
-          test_date: formattedTestDate, // Use the extracted date here
+          test_date: formattedTestDate,
           file_path: `${bucketName}/${filename}`,
           file_type: file.mimetype,
           file_metadata: JSON.stringify(additionalMetadata),
@@ -141,12 +193,6 @@ export const uploadRecords = async (req, res) => {
         });
       } catch (error) {
         console.error(`Error processing file ${file.originalname}:`, error);
-        console.error("Full error details:", {
-          message: error.message,
-          stack: error.stack,
-          cause: error.cause,
-        });
-
         uploadResults.push({
           originalName: file.originalname,
           error: `Failed to process file: ${error.message}`,
@@ -174,12 +220,6 @@ export const uploadRecords = async (req, res) => {
   } catch (error) {
     await trx.rollback();
     console.error("Upload error:", error);
-    console.error("Full error details:", {
-      message: error.message,
-      stack: error.stack,
-      cause: error.cause,
-    });
-
     res.status(500).json({
       error: "Error uploading and processing records",
       details: error.message,
