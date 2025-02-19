@@ -15,51 +15,58 @@ export const STI_TESTS = [
   // LifeLabs Format Tests
   {
     name: "Chlamydia trachomatis",
-    regex: /CHLAMYDIA\s+TRACHOMATIS\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
+    regex:
+      /Chlamydia\s+trachomatis\s+DNA\s+\(NAAT\)\s+[A-Za-z]+\s+(NEGATIVE|POSITIVE)/i,
     notePatterns: [
       {
-        pattern: /SOURCE:\s*([^\n]+)/i,
+        pattern: /Specimen\s+Source\s+([^\n]+)/i,
         label: "Source",
       },
       {
-        pattern: /DATE OF COLLECTION\s+([^\n]+)/i,
+        pattern: /Collection\s+Date\s+([^\n]+)/i,
         label: "Collection Date",
       },
       {
-        pattern: /TIME OF COLLECTION\s+([0-9:]+)/i,
+        pattern: /Collection\s+Time\s+([0-9:]+)/i,
         label: "Collection Time",
       },
     ],
   },
   {
     name: "Neisseria gonorrhoeae",
-    regex: /NEISSERIA\s+GONORRHOEAE\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
+    regex:
+      /Neisseria\s+gonorrhoeae\s+DNA\s+\(NAAT\)\s+[A-Za-z]+\s+(NEGATIVE|POSITIVE)/i,
     notePatterns: [
       {
-        pattern: /SOURCE:\s*([^\n]+)/i,
+        pattern: /Specimen\s+Source\s+([^\n]+)/i,
         label: "Source",
       },
       {
-        pattern: /DATE OF COLLECTION\s+([^\n]+)/i,
+        pattern: /Collection\s+Date\s+([^\n]+)/i,
         label: "Collection Date",
       },
       {
-        pattern: /TIME OF COLLECTION\s+([0-9:]+)/i,
+        pattern: /Collection\s+Time\s+([0-9:]+)/i,
         label: "Collection Time",
       },
     ],
   },
   {
     name: "Trichomonas vaginalis",
-    regex: /TRICHOMONAS\s+VAGINALIS\s+([A-Za-z-]+|\d+\s*[a-zA-Z/]+)/i, // Capture numeric values with units
+    regex:
+      /Trichomonas\s+vaginalis\s+DNA\s+\(NAAT\)\s+[A-Za-z]+\s+(NEGATIVE|POSITIVE)/i,
     notePatterns: [
       {
-        pattern: /SOURCE:\s*([^\n]+)/i,
+        pattern: /Specimen\s+Source\s+([^\n]+)/i,
         label: "Source",
       },
       {
-        pattern: /DATE OF COLLECTION\s+([^\n]+)/i,
+        pattern: /Collection\s+Date\s+([^\n]+)/i,
         label: "Collection Date",
+      },
+      {
+        pattern: /Collection\s+Time\s+([0-9:]+)/i,
+        label: "Collection Time",
       },
     ],
   },
@@ -261,14 +268,25 @@ export const cleanResult = (result) => {
 };
 
 export const standardizeResult = (result, testType) => {
+  // Log for debugging
+  console.log(`Standardizing result: "${result}" for test: "${testType}"`);
+
   result = cleanResult(result);
   const lowerResult = result.toLowerCase().trim();
+
+  // Add logging to see cleaned result
+  console.log(`Cleaned result: "${lowerResult}"`);
 
   if (/^[\d.]+\s*[a-zA-Z/]+$/.test(result)) {
     return {
       result: result,
       value: result,
     };
+  }
+
+  // Add exact match for "NEGATIVE"
+  if (/^negative$/i.test(lowerResult)) {
+    return { result: TEST_RESULTS.NEGATIVE };
   }
 
   if (/^non-reactive$|^non reactive|^nonreactive$/i.test(lowerResult)) {
@@ -283,7 +301,12 @@ export const standardizeResult = (result, testType) => {
     return { result: TEST_RESULTS.NEGATIVE };
   }
 
-  if (/^negative$|no evidence|absent|not detected/i.test(lowerResult)) {
+  // Broaden the negative pattern
+  if (
+    /^negative$|no evidence|absent|not detected|negative result/i.test(
+      lowerResult
+    )
+  ) {
     return { result: TEST_RESULTS.NEGATIVE };
   }
 
@@ -295,32 +318,18 @@ export const standardizeResult = (result, testType) => {
     return { result: TEST_RESULTS.INDETERMINATE };
   }
 
-  if (
-    testType === "Herpes Simplex Virus 1 IgG" ||
-    testType === "Herpes Simplex Virus 2 IgG" ||
-    testType === "Herpes Simplex Virus Interpretation"
-  ) {
-    if (/antibodies detected/i.test(lowerResult)) {
-      return { result: TEST_RESULTS.DETECTED };
-    } else if (/no antibodies detected/i.test(lowerResult)) {
-      return { result: TEST_RESULTS.NOT_DETECTED };
+  // For DNA NAAT specific results
+  if (/dna.*naat/i.test(testType)) {
+    if (/negative/i.test(lowerResult)) {
+      return { result: TEST_RESULTS.NEGATIVE };
+    }
+    if (/positive/i.test(lowerResult)) {
+      return { result: TEST_RESULTS.POSITIVE };
     }
   }
 
-  if (
-    testType === "HIV 1/2 Ag/Ab Combo Screen" ||
-    testType === "HIV Final Interpretation"
-  ) {
-    if (
-      /no hiv p24 antigen and no hiv1\/hiv2 antibodies detected/i.test(
-        lowerResult
-      )
-    ) {
-      return { result: TEST_RESULTS.NOT_DETECTED };
-    } else if (/hiv test detected/i.test(lowerResult)) {
-      return { result: TEST_RESULTS.DETECTED };
-    }
-  }
+  // Log unmatched results
+  console.log(`No standardization match found for: "${lowerResult}"`);
 
   return { result: TEST_RESULTS.INDETERMINATE };
 };
@@ -349,7 +358,7 @@ const extractTestNotes = (text, testConfig) => {
 
 export const extractDateFromText = (text) => {
   const dateRegex =
-    /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)|(\d{4}-\d{2}-\d{2})|(\d{2}\/\d{2}\/\d{4})|(\d{2}-\d{2}-\d{4})|(\d{2}-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-\d{4})/gi;
+    /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)|(\d{4}-\d{2}-\d{2})|(\d{2}\/\d{2}\/\d{4})|(\d{2}-\d{2}-\d{4})|(\d{2}-[A-Z]{3}-\d{4})|(\d{2}-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-\d{4})/gi;
   const matches = text.match(dateRegex);
 
   if (matches) {
@@ -377,21 +386,26 @@ export const findTestResults = (text) => {
       const match = textBlock.match(test.regex);
 
       if (match) {
-        const rawResult = match[1].trim(); // Access captured group [1]
-        const { result } = standardizeResult(rawResult, test.name); // Destructure result only
-        const standardizedResult = result || TEST_RESULTS.INDETERMINATE;
+        const rawResult = match
+          .slice(1)
+          .find((group) => group !== undefined)
+          ?.trim();
+        if (rawResult) {
+          const { result } = standardizeResult(rawResult, test.name);
+          const standardizedResult = result || TEST_RESULTS.INDETERMINATE;
 
-        const contextStart = Math.max(0, match.index - 500);
-        const contextEnd = Math.min(textBlock.length, match.index + 500);
-        const context = textBlock.slice(contextStart, contextEnd);
+          const contextStart = Math.max(0, match.index - 500);
+          const contextEnd = Math.min(textBlock.length, match.index + 500);
+          const context = textBlock.slice(contextStart, contextEnd);
 
-        const notes = extractTestNotes(context, test);
+          const notes = extractTestNotes(context, test);
 
-        results.push({
-          test_type: test.name,
-          result: standardizedResult,
-          notes: notes || "No additional notes",
-        });
+          results.push({
+            test_type: test.name,
+            result: standardizedResult,
+            notes: notes || "No additional notes",
+          });
+        }
       }
     } catch (error) {
       console.error(`Error processing test ${test.name}:`, error);
