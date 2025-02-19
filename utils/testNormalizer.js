@@ -1,4 +1,3 @@
-// Map variations of test names to standardized names
 const TEST_TYPE_MAPPING = {
   // HIV tests
   "HIV 1/2 AG/AB COMBO SCREEN": "HIV-1/2 Antibody",
@@ -41,31 +40,25 @@ const TEST_TYPE_MAPPING = {
 export const normalizeTestType = (testType) => {
   if (!testType) return "Unknown Test";
 
-  // Convert to uppercase for consistent matching
   const upperTestType = testType.toUpperCase();
 
-  // Check if we have a direct mapping
   for (const [key, value] of Object.entries(TEST_TYPE_MAPPING)) {
     if (upperTestType === key) {
       return value;
     }
   }
 
-  // Check for partial matches if no exact match found
   for (const [key, value] of Object.entries(TEST_TYPE_MAPPING)) {
     if (upperTestType.includes(key)) {
       return value;
     }
   }
-
-  // If no match found, return original with proper capitalization
   return testType
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 };
 
-// Group tests by category for better organization
 export const getTestCategory = (testType) => {
   const normalizedType = normalizeTestType(testType);
 
@@ -79,7 +72,6 @@ export const getTestCategory = (testType) => {
   return "Other";
 };
 
-// Sort tests in a consistent order
 export const getTestSortOrder = (testType) => {
   const categories = {
     "HIV": 1,

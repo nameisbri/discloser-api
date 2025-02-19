@@ -19,8 +19,6 @@ export const getLatestResults = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
-    // Get all results
     const results = await knex("test_result as tr")
       .join("test_record as rec", "tr.test_record_id", "rec.id")
       .where({
@@ -29,13 +27,11 @@ export const getLatestResults = async (req, res) => {
       })
       .select(["tr.test_type", "tr.result", "tr.notes", "rec.test_date"]);
 
-    // Normalize and deduplicate results
     const normalizedResults = results.map((result) => ({
       ...result,
       test_type: normalizeTestType(result.test_type),
     }));
 
-    // Group by normalized test type and keep most recent
     const latestByType = {};
     normalizedResults.forEach((result) => {
       const currentDate = new Date(result.test_date);
@@ -46,14 +42,11 @@ export const getLatestResults = async (req, res) => {
       }
     });
 
-    // Convert back to array and sort
     const finalResults = Object.values(latestByType).sort((a, b) => {
-      // First sort by test category
       const categoryDiff =
         getTestSortOrder(a.test_type) - getTestSortOrder(b.test_type);
       if (categoryDiff !== 0) return categoryDiff;
 
-      // Then by date (most recent first)
       return new Date(b.test_date) - new Date(a.test_date);
     });
 
