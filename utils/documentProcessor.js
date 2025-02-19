@@ -33,16 +33,16 @@ const parsePDF = async (pdfBuffer) => {
     // Convert PDF to images
     const convert = fromBuffer(pdfBuffer, options);
     const extractedTexts = [];
-    let extractedDate = null; // Variable to store the extracted date
+    let extractedDate = null;
 
     for (let page = 1; page <= totalPages; page++) {
       console.log(`Processing page ${page}...`);
 
       // Convert page to image
       const image = await convert(page, { responseType: "image" });
-      tempFiles.push(image.path);
+      tempFiles.push(image.path); // Add the file path to the cleanup list
 
-      // Extract text from image with improved settings
+      // Extract text from image
       const {
         data: { text },
       } = await Tesseract.recognize(image.path, "eng", {
@@ -53,22 +53,20 @@ const parsePDF = async (pdfBuffer) => {
         preserve_interword_spaces: "1",
       });
 
+      console.log(`Extracted text from page ${page}:`, text); // Log the extracted text
       extractedTexts.push({ page, text });
 
       // Extract date from the text if not already found
       if (!extractedDate) {
         extractedDate = extractDateFromText(text);
       }
-
-      // Clean up the current page's temporary file immediately
-      await fs.unlink(image.path);
     }
 
     return {
       extractedTexts,
       originalBuffer: pdfBuffer,
       isImage: false,
-      extractedDate, // Return the extracted date
+      extractedDate,
     };
   } catch (error) {
     console.error("Error parsing PDF:", error);
@@ -78,14 +76,19 @@ const parsePDF = async (pdfBuffer) => {
     for (const filePath of tempFiles) {
       try {
         await fs.unlink(filePath);
+        console.log(`Deleted temporary file: ${filePath}`);
       } catch (error) {
-        console.error(`Error deleting temporary file ${filePath}:`, error);
+        if (error.code !== "ENOENT") {
+          // Ignore "file not found" errors
+          console.error(`Error deleting temporary file ${filePath}:`, error);
+        }
       }
     }
 
     // Try to remove temp directory if empty
     try {
       await fs.rmdir(TEMP_DIR);
+      console.log("Temp directory removed");
     } catch (error) {
       console.log("Note: Temp directory not empty or already removed");
     }
