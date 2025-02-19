@@ -6,7 +6,6 @@ import recordRoutes from "./routes/records.js";
 import resultRoutes from "./routes/results.js";
 import shareRoutes from "./routes/share.js";
 import reminderRoutes from "./routes/reminders.js";
-import { dumpTestPatterns } from "./utils/stiTestUtils.js";
 
 dotenv.config();
 
