@@ -16,18 +16,19 @@ export const STI_TESTS = [
   {
     name: "Chlamydia trachomatis",
     regex:
-      /Chlamydia\s+trachomatis\s+DNA\s+\(NAAT\)\s+[A-Za-z]+\s+(NEGATIVE|POSITIVE)/i,
+      /CHLAMYDIA\s+TRACHOMATIS\s+([A-Z]+)|\s*Chlamydia\s+trachomatis\s+DNA\s+\(NAAT\)\s+[A-Za-z]+\s+(NEGATIVE|POSITIVE)/i,
     notePatterns: [
       {
-        pattern: /Specimen\s+Source\s+([^\n]+)/i,
+        pattern: /SOURCE:\s*([^\n]+)/i,
         label: "Source",
       },
       {
-        pattern: /Collection\s+Date\s+([^\n]+)/i,
+        pattern: /DATE OF COLLECTION\s+([^\n]+)|Collection\s+Date\s+([^\n]+)/i,
         label: "Collection Date",
       },
       {
-        pattern: /Collection\s+Time\s+([0-9:]+)/i,
+        pattern:
+          /TIME OF COLLECTION\s+([0-9:]+)|Collection\s+Time\s+([0-9:]+)/i,
         label: "Collection Time",
       },
     ],
@@ -35,18 +36,19 @@ export const STI_TESTS = [
   {
     name: "Neisseria gonorrhoeae",
     regex:
-      /Neisseria\s+gonorrhoeae\s+DNA\s+\(NAAT\)\s+[A-Za-z]+\s+(NEGATIVE|POSITIVE)/i,
+      /NEISSERIA\s+GONORRHOEAE\s+([A-Z]+)|\s*Neisseria\s+gonorrhoeae\s+DNA\s+\(NAAT\)\s+[A-Za-z]+\s+(NEGATIVE|POSITIVE)/i,
     notePatterns: [
       {
-        pattern: /Specimen\s+Source\s+([^\n]+)/i,
+        pattern: /SOURCE:\s*([^\n]+)|Specimen\s+Source\s+([^\n]+)/i,
         label: "Source",
       },
       {
-        pattern: /Collection\s+Date\s+([^\n]+)/i,
+        pattern: /DATE OF COLLECTION\s+([^\n]+)|Collection\s+Date\s+([^\n]+)/i,
         label: "Collection Date",
       },
       {
-        pattern: /Collection\s+Time\s+([0-9:]+)/i,
+        pattern:
+          /TIME OF COLLECTION\s+([0-9:]+)|Collection\s+Time\s+([0-9:]+)/i,
         label: "Collection Time",
       },
     ],
@@ -268,25 +270,41 @@ export const cleanResult = (result) => {
 };
 
 export const standardizeResult = (result, testType) => {
-  // Log for debugging
-  console.log(`Standardizing result: "${result}" for test: "${testType}"`);
-
   result = cleanResult(result);
   const lowerResult = result.toLowerCase().trim();
 
-  // Add logging to see cleaned result
-  console.log(`Cleaned result: "${lowerResult}"`);
+  // Special handling for HIV interpretation
+  if (
+    testType === "HIV Final Interpretation" ||
+    testType === "HIV 1/2 Ag/Ab Combo Screen"
+  ) {
+    if (
+      lowerResult.includes("no hiv") &&
+      lowerResult.includes("antibodies detected")
+    ) {
+      return { result: TEST_RESULTS.NOT_DETECTED };
+    }
+    if (lowerResult.includes("hiv") && lowerResult.includes("detected")) {
+      return { result: TEST_RESULTS.DETECTED };
+    }
+  }
 
+  // Special handling for HSV interpretation
+  if (testType === "Herpes Simplex Virus Interpretation") {
+    if (lowerResult.includes("antibodies detected")) {
+      return { result: TEST_RESULTS.DETECTED };
+    }
+    if (lowerResult.includes("no antibodies detected")) {
+      return { result: TEST_RESULTS.NOT_DETECTED };
+    }
+  }
+
+  // Handle numeric values
   if (/^[\d.]+\s*[a-zA-Z/]+$/.test(result)) {
     return {
       result: result,
       value: result,
     };
-  }
-
-  // Add exact match for "NEGATIVE"
-  if (/^negative$/i.test(lowerResult)) {
-    return { result: TEST_RESULTS.NEGATIVE };
   }
 
   if (/^non-reactive$|^non reactive|^nonreactive$/i.test(lowerResult)) {
@@ -301,16 +319,11 @@ export const standardizeResult = (result, testType) => {
     return { result: TEST_RESULTS.NEGATIVE };
   }
 
-  // Broaden the negative pattern
-  if (
-    /^negative$|no evidence|absent|not detected|negative result/i.test(
-      lowerResult
-    )
-  ) {
+  if (/^negative$|no evidence|absent|not detected/i.test(lowerResult)) {
     return { result: TEST_RESULTS.NEGATIVE };
   }
 
-  if (/^positive$|^reactive|^antibodies detected$/i.test(lowerResult)) {
+  if (/^positive$|^reactive|detected$/i.test(lowerResult)) {
     return { result: TEST_RESULTS.POSITIVE };
   }
 
@@ -318,19 +331,8 @@ export const standardizeResult = (result, testType) => {
     return { result: TEST_RESULTS.INDETERMINATE };
   }
 
-  // For DNA NAAT specific results
-  if (/dna.*naat/i.test(testType)) {
-    if (/negative/i.test(lowerResult)) {
-      return { result: TEST_RESULTS.NEGATIVE };
-    }
-    if (/positive/i.test(lowerResult)) {
-      return { result: TEST_RESULTS.POSITIVE };
-    }
-  }
-
   // Log unmatched results
   console.log(`No standardization match found for: "${lowerResult}"`);
-
   return { result: TEST_RESULTS.INDETERMINATE };
 };
 
@@ -358,8 +360,17 @@ const extractTestNotes = (text, testConfig) => {
 
 export const extractDateFromText = (text) => {
   const dateRegex =
+    /(?:DATE OF COLLECTION|Collection Date:?)\s*(\d{2}-[A-Z]{3}-\d{4}|\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}|\d{2}-\d{2}-\d{4})/i;
+  const match = text.match(dateRegex);
+
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  // Fallback to original broader date search if specific format not found
+  const generalDateRegex =
     /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)|(\d{4}-\d{2}-\d{2})|(\d{2}\/\d{2}\/\d{4})|(\d{2}-\d{2}-\d{4})|(\d{2}-[A-Z]{3}-\d{4})|(\d{2}-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-\d{4})/gi;
-  const matches = text.match(dateRegex);
+  const matches = text.match(generalDateRegex);
 
   if (matches) {
     const currentDate = new Date();
@@ -373,6 +384,9 @@ export const extractDateFromText = (text) => {
       }
     }
   }
+
+  return null;
+};
 
   return null;
 };
