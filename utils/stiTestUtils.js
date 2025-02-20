@@ -388,6 +388,9 @@ export const extractDateFromText = (text) => {
   return null;
 };
 
+  return null;
+};
+
 export const findTestResults = (text) => {
   const results = []; // Initialize results array here
   const textBlock = typeof text === "string" ? text : text.toString();

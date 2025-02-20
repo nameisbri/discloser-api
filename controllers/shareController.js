@@ -1,5 +1,10 @@
 import initKnex from "knex";
 import configuration from "../knexfile.js";
+import {
+  normalizeTestType,
+  getTestSortOrder,
+} from "../utils/testNormalizer.js";
+
 const knex = initKnex(configuration);
 
 export const getLatestResults = async (req, res) => {
