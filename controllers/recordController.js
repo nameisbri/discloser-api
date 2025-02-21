@@ -9,13 +9,11 @@ import sharp from "sharp";
 const knex = initKnex(configuration);
 
 const formatDateForMySQL = (dateString) => {
-  // Check if the date is in the DD-MMM-YYYY format (e.g., 09-SEP-2024)
   const monthAbbrRegex =
     /(\d{2})-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-(\d{4})/i;
   const monthAbbrMatch = dateString.match(monthAbbrRegex);
 
   if (monthAbbrMatch) {
-    // Convert the month abbreviation to a number (01-12)
     const monthMap = {
       JAN: "01",
       FEB: "02",
@@ -34,7 +32,6 @@ const formatDateForMySQL = (dateString) => {
     const month = monthMap[monthAbbrMatch[2].toUpperCase()];
     const year = monthAbbrMatch[3];
 
-    // Create a date object and format it for MySQL
     const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
     return date.toISOString().slice(0, 19).replace("T", " ");
   }
@@ -67,7 +64,6 @@ export const uploadRecords = async (req, res) => {
   try {
     const { user_id } = req.body;
 
-    console.log("Received user_id:", user_id);
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: "No files uploaded" });
     }
@@ -86,15 +82,13 @@ export const uploadRecords = async (req, res) => {
           extractedDate: initialExtractedDate,
         } = await processDocument(file.buffer, file.mimetype);
 
-        // Use let instead of const to allow reassignment
         let extractedDate = initialExtractedDate;
 
-        // Handle missing date
         if (!extractedDate) {
           console.warn(
             "No date found in the document. Using current date as fallback."
           );
-          extractedDate = new Date().toISOString(); // Fallback to current date
+          extractedDate = new Date().toISOString();
         }
 
         const fileExtension =
@@ -114,7 +108,6 @@ export const uploadRecords = async (req, res) => {
           };
         }
 
-        console.log("Uploading to MinIO...");
         await minioClient.putObject(
           bucketName,
           filename,
@@ -125,11 +118,8 @@ export const uploadRecords = async (req, res) => {
             ...additionalMetadata,
           }
         );
-        console.log("MinIO upload complete");
 
-        console.log("Extracted date from document:", extractedDate);
         const formattedTestDate = formatDateForMySQL(extractedDate);
-        console.log("Formatted test_date for MySQL:", formattedTestDate);
 
         const [recordId] = await trx("test_record").insert({
           user_id,
@@ -140,9 +130,7 @@ export const uploadRecords = async (req, res) => {
           created_at: knex.fn.now(),
           updated_at: knex.fn.now(),
         });
-        console.log("Record created with ID:", recordId);
 
-        // Process extracted test results
         if (extractedTexts && extractedTexts.length > 0) {
           const resultsToInsert = [];
 
