@@ -78,5 +78,5 @@ const uploadToWasabi = async (
     throw error;
   }
 };
-
+// upload.js
 export { upload, s3Client, uploadToWasabi };
