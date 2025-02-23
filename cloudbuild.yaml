@@ -1,0 +1,32 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-t", "gcr.io/dicloser/discloser-api:$SHORT_SHA", "."]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "gcr.io/dicloser/discloser-api:$SHORT_SHA"]
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args: [
+        "run",
+        "deploy",
+        "discloser-api",
+        "--image",
+        "gcr.io/dicloser/discloser-api:$SHORT_SHA",
+        "--region",
+        "ca-central-1",
+        "--platform",
+        "managed",
+        "--update-env-vars",
+        "DB_HOST=[YOUR_DB_HOST],
+        DB_PORT=3306,
+        DB_NAME=discloser_db,
+        DB_USER=discloser,
+        DB_PASSWORD=TMP-tzv*nmf!wyq4pca,
+        AWS_ACCESS_KEY_ID=F05NDPM9JERAHTNGFPMC,
+        AWS_SECRET_ACCESS_KEY=Gh4sbFKulIKmdMbG5GY0ln54L6yIWryz53oXChQT,
+        AWS_REGION=ca-central-1,
+        AWS_ENDPOINT_URL=https://s3.ca-central-1.wasabisys.com,
+        MINIO_BUCKET_NAME=discloser-test-records,
+        PORT=8080,
+        CORS_ORIGIN=https://discloser.app",
+      ]
+images: ["gcr.io/dicloser/your-api-image:$SHORT_SHA"]
