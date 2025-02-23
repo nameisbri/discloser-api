@@ -27,7 +27,6 @@ steps:
         AWS_REGION=ca-central-1,
         AWS_ENDPOINT_URL=https://s3.ca-central-1.wasabisys.com,
         MINIO_BUCKET_NAME=discloser-test-records,
-        PORT=8080,
         CORS_ORIGIN=https://discloser.app",
       ]
 images: ["gcr.io/dicloser/your-api-image:$SHORT_SHA"]
