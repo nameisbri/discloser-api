@@ -17,7 +17,7 @@ steps:
         "--platform",
         "managed",
         "--update-env-vars",
-        "DB_HOST=34.130.103.181,
+        "DB_HOST=10.153.113.4,
         DB_PORT=3306,
         DB_NAME=discloser_db,
         DB_USER=discloser,
