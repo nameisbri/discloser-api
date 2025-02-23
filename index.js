@@ -11,7 +11,7 @@ dotenv.config();
 
 const app = express();
 
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000; //Use 3000 as a default if port is not set.
 
 const corsOptions = {
   origin: process.env.CORS_ORIGIN,
@@ -31,6 +31,6 @@ app.get("/", (req, res) => {
   res.status(200).send("Welcome to discloser");
 });
 
-app.listen(PORT, () => {
-  console.log("server running on port ", PORT);
+app.listen(port, () => {
+  console.log("server running on port ", port);
 });
