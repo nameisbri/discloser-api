@@ -11,7 +11,7 @@ dotenv.config();
 
 const app = express();
 
-const port = process.env.PORT || 3000; //Use 3000 as a default if port is not set.
+const port = process.env.PORT || 8080; //Use 8080 as a default if port is not set.
 
 const corsOptions = {
   origin: process.env.CORS_ORIGIN,
