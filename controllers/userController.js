@@ -1,5 +1,6 @@
 import initKnex from "knex";
 import configuration from "../knexfile.js";
+
 const knex = initKnex(configuration);
 
 export const createUser = async (req, res) => {
@@ -58,7 +59,7 @@ export const createUser = async (req, res) => {
 
     res.status(201).json(newUser);
   } catch (error) {
-    console.error(error);
+    console.error("Error creating user:", error);
     res.status(500).json({ error: "Error creating user" });
   }
 };
@@ -66,6 +67,8 @@ export const createUser = async (req, res) => {
 export const getUser = async (req, res) => {
   try {
     const { id } = req.params;
+
+    console.log(`Attempting to retrieve user with ID: ${id}`); // Log user ID
 
     const user = await knex("users")
       .select([
@@ -83,18 +86,22 @@ export const getUser = async (req, res) => {
       .where({ id })
       .first();
 
+    console.log("SQL Query executed successfully"); // Log success
+
     if (!user) {
+      console.log(`User with ID: ${id} not found`); // Log user not found
       return res.status(404).json({ error: "User not found" });
     }
 
     // Only return active users
     if (!user.is_active) {
+      console.log(`User with ID: ${id} is not active`); // Log inactive user
       return res.status(404).json({ error: "User not found" });
     }
 
     res.json(user);
   } catch (error) {
-    console.error(error);
+    console.error("Error retrieving user:", error);
     res.status(500).json({ error: "Error retrieving user" });
   }
 };
