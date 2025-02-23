@@ -1,5 +1,7 @@
 import multer from "multer";
-import * as Minio from "minio";
+import { S3Client } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage"; //For multipart uploads
+import { v4 as uuidv4 } from "uuid";
 
 const storage = multer.memoryStorage();
 
@@ -32,12 +34,34 @@ const upload = multer({
   },
 });
 
-const minioClient = new Minio.Client({
-  endPoint: process.env.MINIO_ENDPOINT,
-  port: parseInt(process.env.MINIO_PORT),
-  useSSL: process.env.MINIO_USE_SSL === "true",
-  accessKey: process.env.MINIO_ACCESS_KEY,
-  secretKey: process.env.MINIO_SECRET_KEY,
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION,
+  endpoint: process.env.AWS_ENDPOINT_URL,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 });
 
-export { upload, minioClient };
+const uploadToWasabi = async (
+  bucketName,
+  filename,
+  buffer,
+  contentType,
+  metadata
+) => {
+  const upload = new Upload({
+    client: s3Client,
+    params: {
+      Bucket: bucketName,
+      Key: filename,
+      Body: buffer,
+      ContentType: contentType,
+      Metadata: metadata,
+    },
+  });
+
+  await upload.done();
+};
+
+export { upload, s3Client, uploadToWasabi };

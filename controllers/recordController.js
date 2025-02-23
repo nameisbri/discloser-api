@@ -1,6 +1,6 @@
 import initKnex from "knex";
 import configuration from "../knexfile.js";
-import { minioClient } from "../middlewares/upload.js";
+import { upload, uploadToWasabi } from "../middlewares/upload.js"; // Import the correct functions.
 import { v4 as uuidv4 } from "uuid";
 import { processDocument } from "../utils/documentProcessor.js";
 import { findTestResults } from "../utils/stiTestUtils.js";
@@ -102,21 +102,18 @@ export const uploadRecords = async (req, res) => {
         if (isImage) {
           const metadata = await sharp(originalBuffer).metadata();
           additionalMetadata = {
-            width: metadata.width,
-            height: metadata.height,
+            width: String(metadata.width),
+            height: String(metadata.height),
             format: metadata.format,
           };
         }
 
-        await minioClient.putObject(
+        await uploadToWasabi(
           bucketName,
           filename,
           originalBuffer,
-          originalBuffer.length,
-          {
-            "Content-Type": file.mimetype,
-            ...additionalMetadata,
-          }
+          file.mimetype,
+          additionalMetadata
         );
 
         const formattedTestDate = formatDateForMySQL(extractedDate);

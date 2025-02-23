@@ -1,0 +1,10 @@
+{
+  "web": {
+    "client_id": "816706813459-pp08na8reigfuq4r4ua6nnba6g5iku7o.apps.googleusercontent.com",
+    "project_id": "dicloser",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_secret": "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"
+  }
+}
