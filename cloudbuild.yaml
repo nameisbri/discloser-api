@@ -1,3 +1,4 @@
+logsBucket: "gs://your-cloud-build-logs-bucket"
 steps:
   - name: "gcr.io/cloud-builders/docker"
     args: ["build", "-t", "gcr.io/dicloser/discloser-api:$SHORT_SHA", "."]
