@@ -29,4 +29,4 @@ steps:
         MINIO_BUCKET_NAME=discloser-test-records,
         CORS_ORIGIN=https://discloser.app",
       ]
-images: ["gcr.io/dicloser/your-api-image:$SHORT_SHA"]
+images: ["gcr.io/dicloser/discloser-api:$SHORT_SHA"]
