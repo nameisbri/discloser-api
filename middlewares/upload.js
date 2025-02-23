@@ -6,6 +6,12 @@ import { v4 as uuidv4 } from "uuid";
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
+  console.log(
+    "upload.js: File filter called for:",
+    file.originalname,
+    "Mimetype:",
+    file.mimetype
+  );
   const allowedTypes = [
     "application/pdf",
     "image/jpeg",
@@ -14,8 +20,10 @@ const fileFilter = (req, file, cb) => {
   ];
 
   if (allowedTypes.includes(file.mimetype)) {
+    console.log("upload.js: File type allowed:", file.mimetype);
     cb(null, true);
   } else {
+    console.log("upload.js: File type not allowed:", file.mimetype);
     cb(
       new Error(
         "Invalid file type. Only PDF, JPEG, PNG, and WebP files are allowed."
@@ -50,18 +58,25 @@ const uploadToWasabi = async (
   contentType,
   metadata
 ) => {
-  const upload = new Upload({
-    client: s3Client,
-    params: {
-      Bucket: bucketName,
-      Key: filename,
-      Body: buffer,
-      ContentType: contentType,
-      Metadata: metadata,
-    },
-  });
+  console.log("upload.js: Starting Wasabi upload:", filename);
+  try {
+    const upload = new Upload({
+      client: s3Client,
+      params: {
+        Bucket: bucketName,
+        Key: filename,
+        Body: buffer,
+        ContentType: contentType,
+        Metadata: metadata,
+      },
+    });
 
-  await upload.done();
+    await upload.done();
+    console.log("upload.js: Wasabi upload successful:", filename);
+  } catch (error) {
+    console.error("upload.js: Wasabi upload failed:", filename, error);
+    throw error;
+  }
 };
 
 export { upload, s3Client, uploadToWasabi };
