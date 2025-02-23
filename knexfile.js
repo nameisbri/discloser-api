@@ -1,5 +1,5 @@
 import "dotenv/config";
-
+// logs:
 console.log("Database Configuration:");
 console.log("  Host:", process.env.DB_HOST);
 console.log("  Database:", process.env.DB_NAME);
