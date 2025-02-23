@@ -1,5 +1,10 @@
 # ✓ _discloser_
 
+> **Additional Resources:**  
+> • [Technical Documentation](./DOCUMENTATION.md) - Detailed project implementation, installation guide, and technical specifications  
+> • [Sample Test Files](./sample-files/) - Example files for testing the upload functionality
+> • [Front End repository](https://github.com/nameisbri/discloser)
+
 ## Overview
 
 **_discloser_** is a web application designed to help users manage and share their sexual health information securely. It enables users to track STI test results, set automated testing reminders, and access basic educational resources, all while maintaining privacy and promoting informed consent.
@@ -15,8 +20,6 @@ Sexual health conversations and STI status sharing can be awkward, inconsistent,
 - Inconsistent testing schedules due to lack of reminders.
 
 ### User Profile
-
-**Primary users include:**
 
 **Primary users include:**
 
@@ -54,7 +57,8 @@ Sexual health conversations and STI status sharing can be awkward, inconsistent,
 
 - react-hook-form
 - axios
-- html2canvas
+- lucide-react
+- sass
 
 ---
 
@@ -68,11 +72,12 @@ Sexual health conversations and STI status sharing can be awkward, inconsistent,
 #### **Key Libraries**
 
 - Knex.js
+- minio
 - multer
-- pdf-parse
-- node-cro
-- nodemailer
-- helmet
+- pdf-lib
+- pdf2pic
+- sharp
+- tesseract.js
 
 ### APIs
 
@@ -100,8 +105,6 @@ No external APIs will be used for this MVP
 
 ### Mockups
 
-![landing-page](https://github.com/user-attachments/assets/e48e9f8a-d2a2-49e0-9708-186c7315ac09)
-![authentication](https://github.com/user-attachments/assets/cc2447f6-ba11-4c37-811f-1246534374ed)
 ![dashboard](https://github.com/user-attachments/assets/12ac61b7-404b-4904-b0a7-ac5acfc3260c)
 ![single-test-detail](https://github.com/user-attachments/assets/d24dd61b-dd2b-4a15-8653-56fcfaad8b43)
 ![share-results](https://github.com/user-attachments/assets/c949854b-68cb-4d9e-b371-e98d68504d75)
@@ -111,26 +114,55 @@ No external APIs will be used for this MVP
 
 #### **Entities**
 
-1. **User**:
+1. # **User**:
 
-   - `id`, `email`, `created_at`, `updated_at`.
+   - `id` (PK)
+   - `name`
+   - `screen_name` (unique)
+   - `email` (unique)
+   - `birth_date`
+   - `bio`
+   - `is_active`
+   - `created_at`
+   - `updated_at`
 
 2. **TestRecord**:
 
-   - `id`, `user_id`, `test_date`, `file_path` (MinIO file URL or key), `created_at`, `updated_at`.
+- `id` (PK)
+- `user_id` (FK)
+- `test_date`
+- `file_path` (MinIO file URL or key)
+- `is_active`
+- `created_at`
+- `updated_at`
 
-3. **TestResult**:
+======= 3. **TestResult**:
 
-   - `id`, `test_record_id`, `test_type`, `result`, `notes`, `created_at`, `updated_at`.
-
-4. **TestingReminders**:
-   - `id`, `user_id`, `frequency`, `next_test_date`, `last_notified_date`, `created_at`, `updated_at`.
+- `id` (PK)
+- `test_record_id` (FK)
+- `test_type`
+- `result`
+- `notes`
+- `is_active`
+- `created_at`
+- `updated_at`
+- `id` (PK)
+- `user_id` (FK)
+- `frequency`
+- `next_test_date`
+- `last_notified_date`
+- `is_active`
+- `created_at`
+- `updated_at`
 
 #### **Relationships**
 
-- **User** → **TestRecord** (One-to-Many).
-- **TestRecord** → **TestResult** (One-to-Many).
-- **User** → **TestingReminders** (One-to-One).
+- **User** → **TestRecord** (One-to-Many)
+  - One user can have multiple test records
+- **TestRecord** → **TestResult** (One-to-Many)
+  - One test record can have multiple test results
+- **User** → **TestingReminders** (One-to-One)
+  - Each user has one testing reminder schedule
 
 ### Endpoints
 
@@ -199,6 +231,7 @@ No external APIs will be used for this MVP
 
 ### User Management:
 
+- User authentication
 - Manage sharing preferences and permissions
 
 ### Result Management:
@@ -219,5 +252,3 @@ No external APIs will be used for this MVP
 - Sexual health resource library
 - Evidence-based health information
 - Consent education resources
-
-* cloudbuild test 2
