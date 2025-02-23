@@ -1,5 +1,11 @@
 import "dotenv/config";
 
+console.log("Database Configuration:");
+console.log("  Host:", process.env.DB_HOST);
+console.log("  Database:", process.env.DB_NAME);
+console.log("  User:", process.env.DB_USER);
+console.log("  Password:", process.env.DB_PASSWORD ? "********" : "Not Set"); // Mask password for security
+
 export default {
   client: "mysql2",
   connection: {
